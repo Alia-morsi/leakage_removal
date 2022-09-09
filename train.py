@@ -12,6 +12,8 @@ import torch
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 
+
+from pytorch_lightning.loggers import WandbLogger
 from asteroid.engine.system import System
 from asteroid.engine.optimizers import make_optimizer
 from models import Leakage_XUMX
@@ -375,6 +377,8 @@ class XUMXManager(System):
 
 
 def main(conf, args):
+
+    wandb_logger = WandbLogger(project="leakage_removal")
     # Set seed for random
     torch.manual_seed(args.seed)
     random.seed(args.seed)
@@ -473,6 +477,7 @@ def main(conf, args):
         callbacks=callbacks,
         default_root_dir=exp_dir,
         gpus=gpus,
+        logger=wandb_logger,
         #distributed_backend=distributed_backend,
         limit_train_batches=1.0,  # Useful for fast experiment
     )
