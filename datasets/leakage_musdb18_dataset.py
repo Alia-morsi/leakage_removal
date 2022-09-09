@@ -184,7 +184,7 @@ class Leakage_MUSDB18Dataset(torch.utils.data.Dataset):
 
         for model_output in self.outputs:
             audio, _ = sf.read(
-                Path(self.tracks[track_id]["path"] / model_input).with_suffix(self.suffix),
+                Path(self.tracks[track_id]["path"] / model_output).with_suffix(self.suffix),
                 always_2d=True,
                 start=start_sample,
                 stop=stop_sample,
