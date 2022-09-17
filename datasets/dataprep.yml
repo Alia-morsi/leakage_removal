@@ -27,10 +27,10 @@ room_config:
 data:
     sample_rate: 44100
     leakage_removal: True
-    clean_train_dir: ../data/clean/train
-    clean_test_dir: ../data/clean/test
-    out_train_dir: /media/data/alia/Documents/datasets/leakage_removal/train
-    out_test_dir: /media/data/alia/Documents/datasets/leakage_removal/test
+    clean_train_dir: /home/alia/Documents/projects/leakage_removal/asteroid/egs/musdb18/X-UMX/data/clean/train
+    clean_test_dir: /home/alia/Documents/projects/leakage_removal/asteroid/egs/musdb18/X-UMX/data/clean/test
+    out_train_dir: /media/data/alia/Documents/datasets/leakage_removal2/train
+    out_test_dir: /media/data/alia/Documents/datasets/leakage_removal2/test
     sources:
     - bass
     - drums
@@ -38,7 +38,7 @@ data:
     - other
 # Should we train one target at a time, or train all the models together (i.e vocals + everything else, guitar + everything else, etc)
     targets:
-    - drums
+    - bass
     - everything
 
 
