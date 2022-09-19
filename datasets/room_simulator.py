@@ -12,17 +12,113 @@ import pdb
 
 #instead, we opted for another approach where a room factory generates a random room with random placement parameters. So, the needed configuration is for the room factory and not the room.
 room_params = {
-	'corners': [], 
-	'speaker_loc': 0,
-	'instrument_loc': 0,
-	'mic_loc': 0,
-	'ir60': 0, 
-	'damping': None, 
-	'delay': 0, 
-	'directivity': 0, 
-	'mic_type': 'cardioid', # still exploring this option
-	'SnR': 0,
+    'corners': [], 
+    'speaker_loc': 0,
+    'instrument_loc': 0,
+    'mic_loc': 0,
+    'ir60': 0, 
+    'damping': None, 
+    'delay': 0, 
+    'directivity': 0, 
+    'mic_type': 'cardioid', # still exploring this option
+    'SnR': 0,
 }
+
+#this function breaks the abstraction because it assumes knowledge on what is in the dataframe saved by the dataprep.py class. 
+#should be broken into elements that decipher snippets generated here (eg. microphone, ), and called by another function from dataprep.py.
+def to_room_dict(row):
+    room_dict = {}
+    x,y,z =  row['microphone'].split('\n')
+    room_dict['mic_x'] = round(float(x.strip(' ')[2:-1]), 3)
+    room_dict['mic_y'] = round(float(y.strip(' ')[1:-1]), 3)
+    room_dict['mic_z'] = round(float(z.strip(' ')[1:-2]), 3)
+    room_dict['backing_track'] = np.fromstring(row['backing_track'][1:-1], dtype=float, sep=' ')
+    room_dict['instrument'] = np.fromstring(row['instrument'][1:-1], dtype=float, sep=' ')
+    room_dict['air_absorption'] = bool(row['air_absorption'])
+    room_dict['ray_tracing'] = bool(row['ray_tracing'])
+    room_dict['max_order'] = int(row['max_order'])
+    room_dict['material_key'] = row['material_key']
+    energy_absorption = eval(row['energy_absorption'].replace('array', ''))
+    scattering = eval(row['scattering'].replace('array', ''))
+ 
+    room_dict['energy_absorption_coeffs'] = energy_absorption['coeffs']
+    room_dict['energy_absorption_center_freqs'] = energy_absorption['center_freqs']
+    room_dict['scattering_center_freqs'] = scattering['center_freqs']
+    room_dict['scattering_coeffs'] = scattering['coeffs']
+    room_dict['corners'] = eval(row['corners']) #it's really bad to use eval..
+    room_dict['height'] = row['height']
+ 
+    return room_dict
+
+#the prereq is that they have to be of the same size
+def subtract_corners(corners1, corners2):
+    #sort both corner arrays based on x axis then y axis
+    corners1.sort(key=lambda tup: tup[1])
+    corners2.sort(key=lambda tup: tup[1])
+
+    corners1.sort(key=lambda tup: tup[0])
+    corners2.sort(key=lambda tup: tup[0])
+
+    return np.array([(c1[0] - c2[0], c1[0] - c2[0]) for c1, c2 in zip(corners1, corners2)])
+
+def room_dicts_equal(room_dict1, room_dict2):
+    # returns a bool to denote exact matches, and returns a dict of the differences.
+    # for mic, soundsource, and backingtrack, it returns the euclidean distance.
+    # material_key
+    diff = {}
+    
+    mic_dist = np.linalg.norm(np.array([room_dict1['mic_x'], room_dict1['mic_y'], room_dict1['mic_z']]) - 
+                                np.array([room_dict2['mic_x'], room_dict2['mic_y'], room_dict2['mic_z']]))
+
+    diff['mic_dist'] = mic_dist
+
+    bk_track_dist = np.linalg.norm(np.array(room_dict2['backing_track']) - np.array(room_dict2['backing_track']))
+    diff['bk_track_dist'] = bk_track_dist
+
+    instrument_dist = np.linalg.norm(np.array(room_dict1['instrument']) - np.array(room_dict2['instrument']))
+    diff['instrument_dist'] = instrument_dist
+    
+    diff['air_absorption'] = room_dict1['air_absorption'] == room_dict2['air_absorption']
+    diff['ray_tracing'] = room_dict1['ray_tracing'] == room_dict2['ray_tracing'] 
+    diff['max_order'] = room_dict1['max_order'] - room_dict2['max_order']
+    diff['material_key'] = room_dict1['material_key'] == room_dict2['material_key']
+
+    diff['energy_absorption_coeffs'] = np.array(room_dict1['energy_absorption_coeffs']) - np.array(room_dict2['energy_absorption_coeffs']) #not sure if the energy absorption coefficients always have the same value.
+    diff['energy_absorption_center_freqs'] = np.array(room_dict1['energy_absorption_center_freqs']) - np.array(room_dict2['energy_absorption_center_freqs'])
+    diff['scattering_coeffs'] = np.array(room_dict1['scattering_coeffs']) - np.array(room_dict2['scattering_coeffs'])
+    diff['scattering_center_freqs'] = np.array(room_dict1['scattering_coeffs']) - np.array(room_dict2['scattering_coeffs'])
+    
+    diff['num_corners'] = len(room_dict1['corners']) - len(room_dict2['corners'])  
+    diff['corner_vals'] = subtract_corners(room_dict1['corners'], room_dict2['corners']) if diff['num_corners'] == 0 else []
+    diff['height'] = room_dict1['height'] - room_dict2['height']    
+
+    accumulator = True
+    for key in diff.keys():
+        import pdb
+        pdb.set_trace()
+
+        if type(diff[key]) == bool:
+            accumulator = accumulator and diff[key]
+        elif type(diff[key]) == int or type(diff[key]) == float or type(diff[key]) == np.float64:
+            accumulator = accumulator and (round(diff[key], 3) == 0)
+        else: #for lists
+            if len(diff[key]) == 0:
+                accumulator = False
+            else:
+                if isinstance(diff[key][0], tuple):
+                    # check if every value is an empty tuple
+                    accumulator = accumulator and (np.all(diff[key] == (0.0, 0.0)))
+                else:
+                    # check if every value is a 0
+                    accumulator = accumulator and (np.all(diff[key] == 0.0))
+            
+    return accumulator, diff
+
+# a room stats function is needed to give overall stats on the variations in the dataseti
+def room_stats(room_dicts):
+    #expects an array of all room dictionaries in the dataset.
+    #pie chart of materials, box and whisker of room areas, 3d points in space for the train and test back track locations, instrument locations. variety in coefficients.  
+    return
 
 def point_in_circle(x_center, y_center, radius):
     #https://stackoverflow.com/questions/5837572/generate-a-random-point-within-a-circle-uniformly
@@ -76,7 +172,7 @@ def choose_3_points(x_center_range, y_center_range, radius, intrapoint_distance)
     return [point_1, point_2, point_3]
 
 class Room:
-    def __init__(self, room, height, backing_track_index, instrument_track_index, kwargs):
+    def __init__(self, room, height, backing_track_index, instrument_track_index, material_name, kwargs):
         self.room = room
         self.backing_track_index = backing_track_index
         self.instrument_track_index = instrument_track_index
@@ -85,6 +181,7 @@ class Room:
         self.instrument_track = None
         self.backing_track_mute = True
         self.instrument_track_mute = True
+        self.material_name = material_name
         self.kwargs = kwargs
 
     def toggle_mute_backing_track(self):
@@ -145,7 +242,12 @@ class Room:
             'instrument': self.room.sources[self.instrument_track_index].position,
         }
     def get_other_parameters(self):
-        return self.kwargs
+        other_params = deepcopy(self.kwargs)
+        other_params.pop('materials')
+        other_params['material_key'] = self.material_name
+        other_params['energy_absorption'] = self.kwargs['materials'].energy_absorption
+        other_params['scattering'] = self.kwargs['materials'].scattering
+        return other_params
 
     def get_directivity(self):
         #TODO: make sure factory is adding reasonable directivity parameters.
@@ -274,4 +376,4 @@ class RoomFactory:
         #where e_absorption is set from the Sabine Target and the room dimensions.
         #Also, later add mic directivity
         
-        return Room(room, height, backing_track_index=0, instrument_track_index=1, kwargs=kwargs)
+        return Room(room, height, backing_track_index=0, instrument_track_index=1, material_name=material_key, kwargs=kwargs)
