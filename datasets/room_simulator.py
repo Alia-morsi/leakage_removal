@@ -94,8 +94,8 @@ def room_dicts_equal(room_dict1, room_dict2):
 
     accumulator = True
     for key in diff.keys():
-        import pdb
-        pdb.set_trace()
+        #import pdb
+        #pdb.set_trace()
 
         if type(diff[key]) == bool:
             accumulator = accumulator and diff[key]
