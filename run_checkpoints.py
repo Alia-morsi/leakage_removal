@@ -12,10 +12,11 @@ parser = argparse.ArgumentParser()
 import yaml
 
 #paths for config files:
+epoch_name = 'epoch=7-step=36575.ckpt'
+epoch_dir = 'exp_outputs'
 serialized_model_path = os.path.join('exp_outputs' , 'serialized_model')
 train_info_data_path = os.path.join('exp_outputs' , 'train_data_info_dict')
-epoch_path = os.path.join('exp_outputs', 'epoch=7-step=36575.ckpt')
-
+epoch_path = os.path.join(epoch_dir, epoch_name)
 
 
 state_dict = torch.load(epoch_path, map_location=torch.device('cpu'))
@@ -32,6 +33,6 @@ model['state_dict'] = modified_state_dict
 model.update(train_info)
 
 model['state_dict'].pop('loss_func.transform.0.window', None)
-torch.save(model, "test.pth")
+torch.save(model, os.path.join(epoch_dir, 'runnable-{}'.format(epoch_name)))
 
 
