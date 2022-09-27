@@ -38,7 +38,7 @@ data:
     - other
 # Should we train one target at a time, or train all the models together (i.e vocals + everything else, guitar + everything else, etc)
     targets:
-    - drums
+    - bass
     - everything
 
 

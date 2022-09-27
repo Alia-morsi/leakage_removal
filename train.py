@@ -460,6 +460,13 @@ def main(conf, args):
         val_dur=args.val_dur,
     )
 
+    import pdb
+    #pdb.set_trace()
+
+    #just a dump of the system parameters for later checkpoint reloads
+    torch.save(x_unmix.serialize(), os.path.join(exp_dir, 'serialized_model'))
+    torch.save(train_dataset.get_infos(), os.path.join(exp_dir, 'train_data_info_dict'))
+
     # Define callbacks
     callbacks = []
     checkpoint_dir = os.path.join(exp_dir, "checkpoints/")
