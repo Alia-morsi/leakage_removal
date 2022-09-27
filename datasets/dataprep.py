@@ -1,5 +1,7 @@
+from cgi import test
 from pathlib import Path
 import argparse
+from turtle import back
 import torch.utils.data
 import torchaudio
 import random
@@ -21,7 +23,8 @@ from scipy.io import wavfile
 import pyroomacoustics as pra
 from room_simulator import RoomFactory, Room
 import pydub
-import pdb
+from delta_generator import delta
+#import pdb
 '''
     Folder Structure:
         >>> #train/<songname>/<variant_num>/<mic_id>/vocals.wav ---------|
@@ -33,6 +36,8 @@ import pdb
 
 parser = argparse.ArgumentParser()
 
+script_dir = Path(__file__).resolve().parent
+root_dir = script_dir.parent
 
 #Note: Currently Unused, and not properly tested
 def filter_factory(variant, args):
@@ -232,7 +237,6 @@ class MUSDB18LeakageDataGenerator():
 
         return audio_mix, clean_backing_track, audio_sources, targets_list, covered_targets 
 
-    
     def generate_and_save_all(self):
         outdir = self.output_train_data if self.split == 'train' else self.output_test_data
 
@@ -360,6 +364,58 @@ class MUSDB18LeakageDataGenerator():
                 yield ({"path": track_path, "min_duration": None})
 
 
+def evaluate_ds(room_factory: RoomFactory, output_dir: Path):
+    """
+        Evaluates the dataset using delta signals as sources to extract the RT60 of each source
+        location. We will reuse the implementation in generate_and_save_all() to iterate over
+        each room variant and each source position. In this case we don't need to access to MUSDB dataset
+        because we only want to evaluate the pyroomacoustics pipeline.
+    """
+
+    eval_df = pd.DataFrame(columns=[])
+
+    # generate a delta dirac (test signal)
+    sample_rate = 44100
+    test_signal = delta(sample_rate=sample_rate, duration=1.0, amplitude=1.0, epsilon=True)
+
+    # run RT60 evaluation for each room variant
+    compute_room_variants(
+        room_factory=room_factory,
+        instrument_data=test_signal,
+        backing_data=test_signal,
+        output_dir=output_dir,
+        dataframe=eval_df
+        )
+    pass
+
+
+def compute_room_variants(room_factory: RoomFactory, instrument_data: np.ndarray,
+                          backing_data: np.ndarray, variants:int = 10, output_dir: Path=None,
+                          dataframe: pd.DataFrame = None):
+    for i in np.arange(0, variants):
+        #print('{} - {}'.format(songname, i))
+        r = room_factory.create_room()
+        # TODO: update makedirs to save audio files
+        #os.makedirs(os.path.join(output_dir, self.targets[0], songname, str(i)), exist_ok=True)
+        r.add_instrument_track(instrument_data)
+        r.add_backing_track(backing_data)
+
+        #read degraded backing track as if there wasn't an instrument playing
+        r.toggle_mute_backing_track()
+        degraded_backing_track = normalize_and_convert(r.read_mic_output())
+
+        print(degraded_backing_track)
+        exit()
+        #read degraded full mix
+        r.toggle_mute_instrument_track()
+        degraded_audio_mix = normalize_and_convert(r.read_mic_output())
+
+        #read degraded instrument mix as if there were no backing track
+        r.toggle_mute_backing_track()
+        degraded_instrument_track = normalize_and_convert(r.read_mic_output())
+        # TODO: estimate RT60 for each generated track and save the values in output_dir in a json file
+
+
 if __name__ == "__main__":
     import yaml
     from asteroid.utils import prepare_parser_from_dict, parse_args_as_dict
@@ -414,15 +470,19 @@ if __name__ == "__main__":
             materials = materials,
             max_order = max_order)
 
-    gen = MUSDB18LeakageDataGenerator(
-            clean_train_data=arg_dic['data']['clean_train_dir'],
-            clean_test_data=arg_dic['data']['clean_test_dir'],
-            output_train_data=arg_dic['data']['out_train_dir'],
-            output_test_data=arg_dic['data']['out_test_dir'],
-            ir_paths=ir_paths, 
-            sources=arg_dic['data']['sources'],
-            targets=arg_dic['data']['targets'],
-            room_factory = rf
-            )
-    gen.generate_and_save_all()
+    # gen = MUSDB18LeakageDataGenerator(
+    #         clean_train_data=arg_dic['data']['clean_train_dir'],
+    #         clean_test_data=arg_dic['data']['clean_test_dir'],
+    #         output_train_data=arg_dic['data']['out_train_dir'],
+    #         output_test_data=arg_dic['data']['out_test_dir'],
+    #         ir_paths=ir_paths, 
+    #         sources=arg_dic['data']['sources'],
+    #         targets=arg_dic['data']['targets'],
+    #         room_factory = rf
+    #         )
+
+    #gen.generate_and_save_all()
+    output_dir = root_dir / "data" / "generated"
+    output_dir.mkdir(exist_ok=True, parents=True)
+    evaluate_ds(room_factory=rf, output_dir=output_dir)
 
