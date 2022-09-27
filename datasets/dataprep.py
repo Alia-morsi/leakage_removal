@@ -121,7 +121,7 @@ class MUSDB18LeakageDataGenerator():
         suffix=".wav",
         samples_per_track=1,
         random_segments=False,
-        split='test',
+        split='train',
         random_track_mix=False,
         sample_rate=44100,
         room_factory=None
@@ -234,29 +234,23 @@ class MUSDB18LeakageDataGenerator():
 
     
     def generate_and_save_all(self):
-        # iterate over all tracks and write them in the proper directory
-        #inputs = {'full_mix': degraded_mix, ' }
-        #          outputs = {}}
-        
         outdir = self.output_train_data if self.split == 'train' else self.output_test_data
 
+        params_df = pd.DataFrame(columns=[])
         for track_id in range(0, len(self.tracks)):
             songname = os.path.basename(os.path.normpath(self.tracks[track_id]["path"]))
             audio_mix, clean_backing_track, audio_sources, targets_list, covered_targets = self.generate_track(track_id)
 
             target_str = '-'.join(covered_targets[0:-1]) #string to represent all chosen targets for path calculation, not including the 'everything_else' at the end. Although this might be an overkill since effectively we'll only be separating one source anyway
 
-            os.makedirs(os.path.join(outdir, target_str, songname), exist_ok=True)
-
             #params_file should be saved outside all the song folders.
-            params_df = pd.DataFrame(columns=[]) #initialized as none since we want to base it on the outputs from the room parameters.
+            song_params_df = pd.DataFrame(columns=[]) #initialized as none since we want to base it on the outputs from the room parameters.
 
             #Create all relevant room variants for this song
             #TODO: check load the metadatafile if exists, and check if a particular variant exists before creating it.
             for i in np.arange(0, self.variants):
                 print('{} - {}'.format(songname, i))
                 r = self.room_factory.create_room()
-                #pdb.set_trace()    
                 os.makedirs(os.path.join(outdir, self.targets[0], songname, str(i)), exist_ok=True)
                 r.add_instrument_track(targets_list[0])
                 r.add_backing_track(torch.stack(list(audio_sources.values())).sum(0))
@@ -273,7 +267,6 @@ class MUSDB18LeakageDataGenerator():
                 r.toggle_mute_backing_track()
                 degraded_instrument_track = normalize_and_convert(r.read_mic_output())
                 
-                #pdb.set_trace()
                 coordinates = r.get_coordinates()
                 other_params = r.get_other_parameters()
                 dimensions = r.get_dimensions()
@@ -289,14 +282,18 @@ class MUSDB18LeakageDataGenerator():
                 if params_df.empty:
                     #initialze the columns of params df
                     params_df = pd.DataFrame(columns = list(joint_dict.keys()))
+                if song_params_df.empty:
+                    song_params_df = pd.DataFrame(columns = list(joint_dict.keys()))
                 
                 row_series = pd.Series(joint_dict)
+                #Save that row into a file in the respective directory
+
+                #but also, append to the global config file.    
                 params_df = params_df.append(joint_dict, ignore_index=True)
-                
+                song_params_df = song_params_df.append(joint_dict, ignore_index=True)
                 #appending to the last line
                 #params_df.loc[len(params_df.index)] = [ir_info, songname]
 
-                #pdb.set_trace()
                 inputs = {
                   'degraded_audio_mix': degraded_audio_mix, 
                   'clean_backing_track': clean_backing_track
@@ -317,16 +314,9 @@ class MUSDB18LeakageDataGenerator():
 
                 #columns.extend(['songname', 'variant'])
                 #params_df = pd.DataFrame(columns=columns)
-                
             #keep writing in every forloop because we want to see intermediary results anyway
             params_df.to_csv(os.path.join(outdir, self.targets[0], 'room_params.csv'))
-
-        #for track in self.tracks:
-            # check the targets, and create a dataset for them
-            # folder name should be x and y where x and y are the targets
-            # call generate tracks on each.
-            #torchaudio.save('{}.wav'.format(self.targets[0]), sources_list[0], self.sample_rate). etc
-            #torchaudio.save(filepath:'everythingelse.wav', src: stacked_audio_sources[0] , sample_rate: self.sample_rate)
+            song_params_df.to_csv(os.path.join(outdir, self.targets[0], songname, 'song_room_params.csv'))
         return
 
     def get_irs(self, group): 

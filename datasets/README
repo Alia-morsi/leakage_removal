@@ -41,4 +41,4 @@ gen = MusDBLeakageDataGenerator(clean_train_data=arg_dic['data']['clean_train_di
 
 gen.generate_and_save_all()
 
-
+Apart from the data generation code, this directory also should includes a modified fork of the musdb python handler. This is to adjust minor elements in the handler to accomodate for the new structure of the leakage version of musdb. To get this directory, clone https://github.com/Alia-morsi/leakage-mus-db.git. Note that there are several musdb objects which we bypass. At the end we just wanted to make minimal changes to the evaluation code. For example, the audio loading within the track object is not used.

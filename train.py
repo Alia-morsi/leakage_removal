@@ -27,7 +27,7 @@ from pathlib import Path
 from operator import itemgetter
 
 
-#import pdb
+import pdb
 # Keys which are not in the conf.yml file can be added here.
 # In the hierarchical dictionary created when parsing, the key `key` can be
 # found at dic['main_args'][key]
@@ -286,7 +286,7 @@ class MultiDomainLoss(_Loss):
         Y = self.transform(targets)[0]
 
         #import pdb
-        #pdb.set_trace()
+        pdb.set_trace()
 
         if self._multi:
             n_src = spec_hat.shape[0]
@@ -422,6 +422,8 @@ def main(conf, args):
         return_time_signals=True if args.loss_use_multidomain else False,
     )
 
+    pdb.set_trace()
+
     optimizer = make_optimizer(
         x_unmix.parameters(), lr=args.lr, optimizer="adam", weight_decay=args.weight_decay
     )
@@ -491,6 +493,7 @@ def main(conf, args):
     #pdb.set_trace()
     trainer.fit(system)
 
+    #pdb.set_trace()
     best_k = {k: v.item() for k, v in checkpoint.best_k_models.items()}
     with open(os.path.join(exp_dir, "best_k_models.json"), "w") as f:
         json.dump(best_k, f, indent=0)
@@ -499,6 +502,7 @@ def main(conf, args):
     system.load_state_dict(state_dict=state_dict["state_dict"])
     system.cpu()
 
+    #pdb.set_trace()
     to_save = system.model.serialize()
     to_save.update(train_dataset.get_infos())
     torch.save(to_save, os.path.join(exp_dir, "best_model.pth"))
