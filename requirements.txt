@@ -1,0 +1,13 @@
+asteroid
+librosa
+numpy
+pandas
+pyroomacoustics
+pydub
+scipy
+simpy
+soundfile
+torch
+torchaudio
+tqdm
+pyyaml
