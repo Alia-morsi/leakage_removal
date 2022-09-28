@@ -206,13 +206,13 @@ class Room:
         # Had to convert it to mono, because it seems that the generated IR expects mono whereas my audio is stereo
         # the format expected is that of scipy.io wavfile
         # if that will change, adapt them somehow.
-        self.instrument_track = signal[0]
+        self.instrument_track = signal[0] if signal.ndim > 1 else signal # when the signal is mono or stereo
         self.room.sources[self.instrument_track_index].signal = np.zeros_like(self.instrument_track)
         self.instrument_track_mute = True
 
     def add_backing_track(self, signal):
         #TODO: Add Stereo Later. Probably that means i'll have to add 2 sources instead of 1
-        self.backing_track = signal[0]
+        self.backing_track = signal[0] if signal.ndim > 1 else signal # when the signal is mono or stereo
         self.room.sources[self.backing_track_index].signal = np.zeros_like(self.backing_track)
         self.backing_track_mute = True
 
