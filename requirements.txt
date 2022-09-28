@@ -1,5 +1,6 @@
 asteroid
 librosa
+matplotlib
 numpy
 pandas
 pyroomacoustics
