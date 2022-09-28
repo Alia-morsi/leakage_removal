@@ -121,7 +121,7 @@ class MUSDB18LeakageDataGenerator():
         suffix=".wav",
         samples_per_track=1,
         random_segments=False,
-        split='train',
+        split='test',
         random_track_mix=False,
         sample_rate=44100,
         room_factory=None
