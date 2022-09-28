@@ -389,9 +389,14 @@ def evaluate_ds(room_factory: RoomFactory, output_dir: Path):
     pass
 
 
-def compute_room_variants(room_factory: RoomFactory, instrument_data: np.ndarray,
-                          backing_data: np.ndarray, variants:int = 10, output_dir: Path=None,
-                          dataframe: pd.DataFrame = None):
+def compute_room_variants(
+        room_factory: RoomFactory,
+        instrument_data: np.ndarray,
+        backing_data: np.ndarray,
+        variants:int = 10,
+        output_dir: Path=None,
+        dataframe: pd.DataFrame = None
+    ):
     for i in np.arange(0, variants):
         #print('{} - {}'.format(songname, i))
         r = room_factory.create_room()
@@ -400,20 +405,45 @@ def compute_room_variants(room_factory: RoomFactory, instrument_data: np.ndarray
         r.add_instrument_track(instrument_data)
         r.add_backing_track(backing_data)
 
-        #read degraded backing track as if there wasn't an instrument playing
-        r.toggle_mute_backing_track()
-        degraded_backing_track = normalize_and_convert(r.read_mic_output())
+        #! read_mic_output() generates an stereo stream and measure_rt60 expects for a mono audio stream
+        #! solution: we can make create a monophonic signal or to compute for each channel and estimate the average.
 
-        print(degraded_backing_track)
-        exit()
+        #! stereo signals contains ITL and ITD clues which might be useful in terms of improving the separation process
+
+        # we don't need to normalize for evaluation
+        #degraded_backing_track = normalize_and_convert(output)
+        #! which normalization are you applying? z-score norm? In case it is a based on amplitude I wouldn't apply it 
+        #! to avoid missing magnitude differences between sources.
+        r.toggle_mute_backing_track()
+
+        degraded_backing_track = r.read_mic_output()
+        #read degraded backing track as if there wasn't an instrument playing
+
+        # estimate RT60
+        #pra.experimental.rt60.measure_rt60(degraded_backing_track, plot=True) # don't assign for plotting 
+        backing_rt60 = pra.experimental.rt60.measure_rt60(degraded_backing_track)
+        print(f"backing_rt60: {backing_rt60} [ms]")
+        # TODO: ensure we are getting ms (it would make sense)
+
         #read degraded full mix
         r.toggle_mute_instrument_track()
-        degraded_audio_mix = normalize_and_convert(r.read_mic_output())
+
+        # we don't need to normalize for evaluation
+        #degraded_audio_mix = normalize_and_convert(r.read_mic_output())
+        degraded_audio_mix = r.read_mic_output()
+        mix_rt60 = pra.experimental.rt60.measure_rt60(degraded_audio_mix[0])
+        print(f"mix_rt60: {mix_rt60} [ms]")
 
         #read degraded instrument mix as if there were no backing track
         r.toggle_mute_backing_track()
-        degraded_instrument_track = normalize_and_convert(r.read_mic_output())
-        # TODO: estimate RT60 for each generated track and save the values in output_dir in a json file
+        #degraded_instrument_track = normalize_and_convert(r.read_mic_output())
+        degraded_instrument_track = r.read_mic_output()
+        instrument_rt60 = pra.experimental.rt60.measure_rt60(degraded_instrument_track[0])
+        print(f"instrument_rt60: {instrument_rt60} [ms]")
+
+        # TODO: save the values in output_dir in a json file
+        # TODO: makedir in output_dir for a variant
+        exit()
 
 
 if __name__ == "__main__":
