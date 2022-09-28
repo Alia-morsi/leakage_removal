@@ -23,10 +23,10 @@ from eval import load_model, separate, inference_args
 model_output_path = './exp_outputs/x-umx_outputs_exp1'
 
 #test file output
-test_output_files = 'EvaluateResults_leakage_musdb18_testdata'
+test_output_files = 'EvaluateResults_leakage_musdb18_exp1_drums_testdata'
 
 #test file input:
-eval_data_path = '/media/data/alia/Documents/datasets/leakage_removal2/'
+eval_data_path = '/media/alia/2aa686b1-fdb5-4cc9-b12d-c1fcdc0782cc/datasets/leakage_removal/'
 
 def eval_main(
     root,

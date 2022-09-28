@@ -109,7 +109,7 @@ class Leakage_MUSDB18Dataset(torch.utils.data.Dataset):
         outputs=['degraded_backing_track', 'degraded_instrument_track'], #another option could be to return the clean instrument track (the source) instead of the degraded instrument track.
         suffix=".wav",
         split="train",
-        target="drums",
+        target="bass",
         #variants_per_track=10, 
         subset=None,
         segment=None,

@@ -18,13 +18,13 @@ import librosa
 from eval import load_model, separate
 
 #where the model itself is stored
-model_output_path = './exp_outputs/x-umx_outputs_exp1'
+model_output_path = './exp_outputs/x-umx_outputs_exp2_bass'
 
 #test file output
-test_output_files = 'results_using_pre-trained/EvaluateResults_leakage_tcl_sample_exp1_drums_tcl'
+test_output_files = 'results_using_pre-trained/EvaluateResults_leakage_tcl_sample_exp2_bass_tcl'
 
 #test file input:
-eval_data_path = '/home/alia/Documents/projects/modified_leakageremoval_environment/leakage_removal/TCL_Sample/performance_sample_explorer/split_samples/Drums'
+eval_data_path = '/home/alia/Documents/leakage_removal/TCL_Sample/performance_sample_explorer/split_samples/Bass'
 
 #insert path of model to load
 model_path = 'best_model.pth'
@@ -63,7 +63,7 @@ def eval_main(root,
     device = torch.device("cuda" if use_cuda else "cpu")
     model, instruments = load_model(model_name, device)
 
-    test_path = '/home/alia/Documents/projects/modified_leakageremoval_environment/leakage_removal/TCL_Sample/performance_sample_explorer/split_samples/Drums'
+    test_path = '/home/alia/Documents/leakage_removal/TCL_Sample/performance_sample_explorer/split_samples/Bass'
 
     test_dataset, directories  = load_from_tcl_sample(test_path)
  
