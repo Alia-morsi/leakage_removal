@@ -118,6 +118,8 @@ class Leakage_MUSDB18Dataset(torch.utils.data.Dataset):
         random_track_mix=False,
         source_augmentations=lambda audio: audio,
         sample_rate=44100,
+        backing_track_input = False
+
     ):
         self.root = root
         self.split = split
@@ -133,6 +135,7 @@ class Leakage_MUSDB18Dataset(torch.utils.data.Dataset):
         self.subset = subset
         self.samples_per_track = samples_per_track
         self.tracks = list(self.get_tracks())
+        self.backing_track_input = backing_track_input
         #self.variants_per_track=variants_per_track
  
         if not self.tracks:
@@ -215,9 +218,11 @@ class Leakage_MUSDB18Dataset(torch.utils.data.Dataset):
         #import pdb
         #pdb.set_trace()
 
-        # for now, just return the input as is without stacking 
-        return model_inputs['degraded_audio_mix'], stacked_outputs
-        #return stacked_inputs, stacked_outputs
+        if self.backing_track_input:
+            return stacked_inputs, stacked_outputs
+        else:
+            # for now, just return the input as is without stacking 
+            return model_inputs['degraded_audio_mix'], stacked_outputs
 
     def __len__(self):
         return len(self.tracks) * self.samples_per_track
