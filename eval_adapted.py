@@ -53,7 +53,7 @@ def eval_main(
             os.path.abspath(model_output_path),
             test_output_files,
         )
-    Path(outdir).mkdir(exist_ok=True, parents=True)
+    Path(outdir).mkdir(exist_ok=False, parents=True)
     print("Evaluated results will be saved in:\n {}".format(outdir), file=sys.stderr)
 
     use_cuda = not no_cuda and torch.cuda.is_available()
