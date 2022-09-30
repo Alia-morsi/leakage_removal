@@ -196,7 +196,7 @@ class Leakage_MUSDB18Dataset(torch.utils.data.Dataset):
             model_outputs[model_output] = audio
 
         #just for now, remove the clean backing track from the model inputs
-        model_inputs.pop('clean_backing_track')
+        #model_inputs.pop('clean_backing_track')
 
         #cut all the audio files to the same length, since unf. I forgot to do that when making the dataset..
         all_audios = list(model_inputs.values()) + list(model_outputs.values())
@@ -211,7 +211,7 @@ class Leakage_MUSDB18Dataset(torch.utils.data.Dataset):
 
         #Since the first attempt will be without the clean backing track, we will just remove the extra input..
         # clean backing track, then degraded audio mix
-        stacked_inputs = torch.stack(list(model_inputs.values()), dim=0)
+        concat_inputs = torch.concat(list(model_inputs.values()), axis=0)
         # degraded instrument track, degraded backing track
         stacked_outputs = torch.stack(list(model_outputs.values()), dim=0)
     
@@ -219,7 +219,7 @@ class Leakage_MUSDB18Dataset(torch.utils.data.Dataset):
         #pdb.set_trace()
 
         if self.backing_track_input:
-            return stacked_inputs, stacked_outputs
+            return concat_inputs, stacked_outputs
         else:
             # for now, just return the input as is without stacking 
             return model_inputs['degraded_audio_mix'], stacked_outputs
