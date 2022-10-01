@@ -1,0 +1,16 @@
+To replicate this environment:
+
+1. regenerate the source_sep_environment.yml (conda env export > source_sep_environment, with the source_sep being the active environment)
+2. install it on the other machine (or virtual environment) with conda. 
+3. I should keep my asteroid fork up to date, but for now just copy the asteroid directory on my user. (~/Documents/asteroid). It is preferrable to install it as dev (pip install -e .). This will be easier than installing a fresh asteroid since I have changed some things.
+3. Clone clone the leakage_removal repo on my github account. 
+4. Copy lr_musdb (short for leakage removal musdb) from my account, or clone it from https://github.com/Alia-morsi/lr_musdb.  This has a modified verion of the musdb dataloader to rely on the folder structure of my custom dataset. 
+5. run python setup.py install from within lr_musdb, to install the modified musdb module. 
+
+To train an existing model:
+
+
+To create a new model:
+
+Then, at this point all you should do is to make sure your conf paths etc are correct and just start running :))
+
