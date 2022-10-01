@@ -1,6 +1,8 @@
 #Todo: have a different eval.py for each model variant.
 # not sure if train.py will have the same fate
 
+#ALSO, I DON'T THINK I EVER RAN THIS ON THE MODIFIED DATASET
+
 import torch
 import numpy as np
 import argparse
@@ -169,32 +171,43 @@ def eval_main(
     alpha=1.0,
     softmask=False,
     residual_model=False,
+    model_path=".",
     model_name="leakage_xumx",
     outdir=None,
     start=0.0,
     duration=-1.0,
     no_cuda=False,
-):
+    test_data_path=None 
 
-    model_name = os.path.abspath(model_name)
+):
+    model_name = os.path.join(model_path, model_name)
+
     if not (os.path.exists(model_name)):
-        outdir = os.path.abspath("./checkpoint_results")
-        model_name = "leakage_xumx_checkpoint"
+        print("model does not exist: {}. Please update path in cnf/eval.yml".format(model_name), file=sys.stderr)
+        quit()
+
+    if os.path.exists(outdir):
+        print("Results of previous run saved in your chosen outdir: {}, please choose another location".format(outdir), file=sys.stderr)
     else:
-        outdir = os.path.join(
-            os.path.abspath(outdir),
-            "EvaluateResults_musdb18_testdata",
-        )
+        outdir = os.path.abspath(outdir)
+
     Path(outdir).mkdir(exist_ok=True, parents=True)
     print("Evaluated results will be saved in:\n {}".format(outdir), file=sys.stderr)
 
+    if not test_data_path:
+        print("No location given for test data, please set one in cfg/eval.yml", file=sys.stderr)
+        exit()
+
     use_cuda = not no_cuda and torch.cuda.is_available()
+
     device = torch.device("cuda" if use_cuda else "cpu")
     model, instruments = load_model(model_name, device)
 
     test_dataset = musdb.DB(root=root, subsets="test", is_wav=True)
     results = museval.EvalStore()
-    Path(outdir).mkdir(exist_ok=True, parents=True)
+
+    #write the config file in outdir
+
     txtout = os.path.join(outdir, "results.txt")
     fp = open(txtout, "w")
     for track in test_dataset:
@@ -286,7 +299,19 @@ if __name__ == "__main__":
     args, _ = parser.parse_known_args()
     args = inference_args(parser, args)
 
-    model = os.path.join(args.outdir, "best_model.pth")
+    #keep these args as is, but read the other file.
+
+    import yaml
+    from asteroid.utils import prepare_parser_from_dict, parse_args_as_dict
+
+    with open("cfg/eval.yml") as f:
+        eval_conf = yaml.safe_load(f)
+    eval_parser = prepare_parser_from_dict(eval_conf, parser=parser)
+
+    arg_dic, plain_args = parse_args_as_dict(eval_parser, return_plain_args=True)
+
+    model = os.path.join(plain_args.model_path, plain_args.model_name)
+
     eval_main(
         root=args.root,
         samplerate=args.samplerate,
@@ -294,8 +319,10 @@ if __name__ == "__main__":
         softmask=args.softmask,
         niter=args.niter,
         residual_model=args.residual_model,
-        model_name=model,
-        outdir=args.outdir,
+        model_name=plain_args.model_name,
+        model_path=plain_args.model_path,
+        test_data_path=plain_args.test_data_path,
+        outdir=plain_args.output_path,
         start=args.start,
         duration=args.duration,
         no_cuda=args.no_cuda,
