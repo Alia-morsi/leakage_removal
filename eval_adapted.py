@@ -19,15 +19,6 @@ from eval import load_model, separate, inference_args
 
 #This expects the test files to be stored in the same file structure of the leakage dataset (variants from 1-10, etc). For running test files kept in other structures, please build on eval_one instead. 
 
-#where the model itself is stored
-model_output_path = './exp_outputs/x-umx_outputs_exp1'
-
-#test file output
-test_output_files = 'EvaluateResults_leakage_musdb18_testdata'
-
-#test file input:
-eval_data_path = '/media/data/alia/Documents/datasets/leakage_removal2/'
-
 def eval_main(
     root,
     samplerate=44100,
@@ -35,26 +26,34 @@ def eval_main(
     alpha=1.0,
     softmask=False,
     residual_model=False,
+    model_path='.',
     model_name="leakage_xumx",
     outdir=None,
     start=0.0,
     duration=-1.0,
     no_cuda=False,
     eval_data_path=None, 
-    instrument='drums'
+    instrument='drums',
 ):
 
-    model_name = os.path.abspath(model_name)
+    #outdir = os.path.join(os.path.abspath(outdir), test_output_files)
+    model_name = os.path.join(model_path, model_name)
+
     if not (os.path.exists(model_name)):
-        outdir = os.path.abspath(model_output_path)
-        #model_name = "leakage_xumx_checkpoint" #i think this is not needed
+        print("model does not exist: {}. Please update path in cnf/eval.yml".format(model_name), file=sys.stderr)
+        quit()
+
+    if os.path.exists(outdir):
+        print("Results of previous run saved in your chosen outdir: {}, please choose another location".format(outdir), file=sys.stderr)
     else:
-        outdir = os.path.join(
-            os.path.abspath(model_output_path),
-            test_output_files,
-        )
+        outdir = os.path.abspath(outdir)
+
     Path(outdir).mkdir(exist_ok=True, parents=True)
     print("Evaluated results will be saved in:\n {}".format(outdir), file=sys.stderr)
+
+    if not eval_data_path:
+        print("No location given for test data, please set one in cfg/eval.yml", file=sys.stderr)
+        exit()
 
     use_cuda = not no_cuda and torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
@@ -64,7 +63,6 @@ def eval_main(
     #pdb.set_trace()
     test_dataset = musdb.DB(root=root, subsets="test", is_wav=True, instrument=instrument, data_path=eval_data_path)
     results = museval.EvalStore()
-    Path(outdir).mkdir(exist_ok=True, parents=True)
     txtout = os.path.join(outdir, "results.txt")
     fp = open(txtout, "w")
     for track in test_dataset:
@@ -160,9 +158,20 @@ if __name__ == "__main__":
     args, _ = parser.parse_known_args()
     args = inference_args(parser, args)
     # Somehow these are not getting called at all.
+
+    import yaml
+    from asteroid.utils import prepare_parser_from_dict, parse_args_as_dict
+
+    with open("cfg/eval.yml") as f:
+        eval_conf = yaml.safe_load(f)
+    eval_parser = prepare_parser_from_dict(eval_conf, parser=parser)
+
+    arg_dic, plain_args = parse_args_as_dict(eval_parser, return_plain_args=True)
+
+    model = os.path.join(plain_args.model_path, plain_args.model_name)
     
     #model = os.path.join("test.pth")
-    model = os.path.join(model_output_path, 'best_model.pth')
+
     eval_main(
         root=musdb.__path__[0],
         samplerate=args.samplerate,
@@ -170,11 +179,12 @@ if __name__ == "__main__":
         softmask=args.softmask,
         niter=args.niter,
         residual_model=args.residual_model,
-        model_name=model,
-        outdir=args.outdir,
+        model_name=plain_args.model_name,
+        model_path=plain_args.model_path, 
+        outdir=plain_args.output_path,
         start=args.start,
         duration=args.duration,
         no_cuda=args.no_cuda,
-        eval_data_path = eval_data_path,
-        instrument="drums"
+        eval_data_path = plain_args.test_data_path,
+        instrument=plain_args.instrument
     )

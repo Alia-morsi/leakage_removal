@@ -12,12 +12,12 @@ import torch
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 
-
-from pytorch_lightning.loggers import WandbLogger
 from asteroid.engine.system import System
 from asteroid.engine.optimizers import make_optimizer
-from models import Leakage_XUMX
-from asteroid.models.leakage_xumx import _STFT, _Spectrogram
+
+from pytorch_lightning.loggers import WandbLogger
+from models import Leakage_Concat_XUMX
+from models.leakage_concat_xumx import _STFT, _Spectrogram
 from asteroid.losses import singlesrc_mse
 from torch.nn.modules.loss import _Loss
 from torch import nn
@@ -379,6 +379,7 @@ class XUMXManager(System):
 def main(conf, args):
 
     wandb_logger = WandbLogger(project="leakage_removal")
+
     # Set seed for random
     torch.manual_seed(args.seed)
     random.seed(args.seed)
@@ -406,7 +407,7 @@ def main(conf, args):
 
     max_bin = bandwidth_to_max_bin(train_dataset.sample_rate, args.in_chan, args.bandwidth)
 
-    x_unmix = Leakage_XUMX(
+    x_unmix = Leakage_Concat_XUMX(
         window_length=args.window_length,
         input_mean=scaler_mean,
         input_scale=scaler_std,
@@ -461,9 +462,6 @@ def main(conf, args):
         config=conf,
         val_dur=args.val_dur,
     )
-
-    import pdb
-    #pdb.set_trace()
 
     #just a dump of the system parameters for later checkpoint reloads
     torch.save(x_unmix.serialize(), os.path.join(exp_dir, 'serialized_model'))

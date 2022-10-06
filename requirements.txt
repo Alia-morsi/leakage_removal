@@ -1,0 +1,14 @@
+asteroid
+librosa
+matplotlib
+numpy
+pandas
+pyroomacoustics
+pydub
+scipy
+simpy
+soundfile
+torch
+torchaudio
+tqdm
+pyyaml

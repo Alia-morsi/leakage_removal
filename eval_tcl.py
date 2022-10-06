@@ -17,18 +17,6 @@ import librosa
 
 from eval import load_model, separate
 
-#where the model itself is stored
-model_output_path = './exp_outputs/x-umx_outputs_exp1'
-
-#test file output
-test_output_files = 'results_using_pre-trained/EvaluateResults_leakage_tcl_sample_exp1_drums_tcl'
-
-#test file input:
-eval_data_path = '/home/alia/Documents/projects/modified_leakageremoval_environment/leakage_removal/TCL_Sample/performance_sample_explorer/split_samples/Drums'
-
-#insert path of model to load
-model_path = 'best_model.pth'
-
 #this uses the folder structure in my split samples
 def load_from_tcl_sample(root_dir):
     ls_contents = os.listdir(root_dir)
@@ -47,23 +35,36 @@ def eval_main(root,
     alpha=1.0,
     softmask=False,
     residual_model=False,
+    model_path='.',
     model_name="leakage_xumx",
+    outdir=None, 
     outdir='',
     start=0.0,
     duration=-1.0,
     no_cuda=False,
+    instrument='drums',
+    eval_data_path=None
 ):
 
-    outdir = os.path.join(os.path.abspath(outdir), test_output_files)
-    
+#    outdir = os.path.join(os.path.abspath(outdir), test_output_files)
+
+    model_name = os.path.join(model_path, model_name)
+
+    if not (os.path.exists(model_name)):
+        print("model does not exist: {}. Please update path in cnf/eval.yml".format(model_name), file=sys.stderr)
+        quit()
+
+    if os.path.exists(outdir):
+        print("Results of previous run saved in your chosen outdir: {}, please choose another location".format(outdir), file=sys.stderr)
+    else:
+        outdir = os.path.abspath(outdir)
+
     Path(outdir).mkdir(exist_ok=True, parents=True)
     print("Evaluated results will be saved in:\n {}".format(outdir), file=sys.stderr)
 
-    use_cuda = not no_cuda and torch.cuda.is_available()
-    device = torch.device("cuda" if use_cuda else "cpu")
-    model, instruments = load_model(model_name, device)
-
-    test_path = '/home/alia/Documents/projects/modified_leakageremoval_environment/leakage_removal/TCL_Sample/performance_sample_explorer/split_samples/Drums'
+    if not eval_data_path:
+        print("No location given for test data, please set one in cfg/eval.yml", file=sys.stderr)
+        exit()
 
     test_dataset, directories  = load_from_tcl_sample(test_path)
  
@@ -89,7 +90,6 @@ def eval_main(root,
             # as the input of OpenUnmix is always stereo
             audio = np.repeat(audio, 2, axis=1)
 
-
         estimates = separate(
             audio,
             model,
@@ -107,11 +107,21 @@ def eval_main(root,
         for target, estimate in estimates.items():
             sf.write(str(output_path / Path(target).with_suffix(".wav")), estimate, samplerate)
         
-
 if __name__ == "__main__":
-    
+
+    with open("cfg/eval.yml") as f:
+        eval_conf = yaml.safe_load(f)
+    eval_parser = prepare_parser_from_dict(eval_conf, parser=parser)
+
+    arg_dic, plain_args = parse_args_as_dict(eval_parser, return_plain_args=True)
+
+    model = os.path.join(plain_args.model_path, plain_args.model_name)
+
     eval_main("", 
-        model_name=os.path.join(model_output_path, model_path),
-        outdir='',
+        model_name=plain_args.model_name,
+        outdir=plain_args.output_path,
+        model_path=plain_args.model_path,
+        eval_data_path=plain_args.test_data_path,
+        instrument=plain_args.instrument
     )
 

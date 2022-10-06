@@ -61,6 +61,7 @@ def subtract_corners(corners1, corners2):
 
     return np.array([(c1[0] - c2[0], c1[0] - c2[0]) for c1, c2 in zip(corners1, corners2)])
 
+#this function does not take into account the rt60 estimates yet
 def room_dicts_equal(room_dict1, room_dict2):
     # returns a bool to denote exact matches, and returns a dict of the differences.
     # for mic, soundsource, and backingtrack, it returns the euclidean distance.
@@ -172,15 +173,19 @@ def choose_3_points(x_center_range, y_center_range, radius, intrapoint_distance)
     return [point_1, point_2, point_3]
 
 class Room:
-    def __init__(self, room, height, backing_track_index, instrument_track_index, material_name, kwargs):
+    def __init__(self, room, height, material_name, kwargs):
         self.room = room
-        self.backing_track_index = backing_track_index
-        self.instrument_track_index = instrument_track_index
+        self.backing_track_index = 0
+        self.instrument_track_index = 1
         self.height = height
         self.backing_track = None
         self.instrument_track = None
+
+        self.delta_signal = delta(sample_rate=44100, duration=1.0, amplitude=1.0, epsilon=True)
+
         self.backing_track_mute = True
         self.instrument_track_mute = True
+
         self.material_name = material_name
         self.kwargs = kwargs
 
@@ -202,17 +207,55 @@ class Room:
             self.instrument_track_mute = True
         return
 
+    def get_rt60_estimates(self):
+        #! read_mic_output() generates an stereo stream and measure_rt60 expects for a mono audio stream
+        #! solution: we can make create a monophonic signal or to compute for each channel and estimate the average.
+
+        #! stereo signals contains ITL and ITD clues which might be useful in terms of improving the separation process
+
+        # we don't need to normalize for evaluation
+
+        #add the instrument track and backing track as delta functions.
+        
+        #Ideally, this function should be called before the insturment track and the backing track are set. 
+        #But in case it is called after they are set, we need to return the backing and instrument signals after the delta
+        #stuff is finished..
+
+        backing_track_bak = self.backing_track
+        instrument_track_bak = self.instrument_track
+
+        self.add_backing_track(self.delta_signal)
+        self.add_instrument_track(self.delta_signal)
+
+        self.toggle_mute_backing_track()
+
+        backing_track_rt60 = pra.experimental.rt60.measure_rt60(self.read_mic_output()[0])
+
+        self.toggle_mute_backing_track()
+        self.toggle_mute_instrument_track()
+
+        instrument_track_rt60 = pra.experimental.rt60.measure_rt60(self.read_mic_output()[0])
+
+        #return the backing track and instrument track if they weren't None.
+        if backing_track_bak:
+            self.add_backing_track(backing_track_bak)
+        if instrument_track_bak:
+            self.add_instrument_track(instrument_track_bak)
+
+        return {'backing_track_rt60': backing_track_rt60, 
+                 'instrument_track_rt60': instrument_track_rt60} 
+
     def add_instrument_track(self, signal):
         # Had to convert it to mono, because it seems that the generated IR expects mono whereas my audio is stereo
         # the format expected is that of scipy.io wavfile
         # if that will change, adapt them somehow.
-        self.instrument_track = signal[0]
+        self.instrument_track = signal[0] if signal.ndim > 1 else signal # when the signal is mono or stereo
         self.room.sources[self.instrument_track_index].signal = np.zeros_like(self.instrument_track)
         self.instrument_track_mute = True
 
     def add_backing_track(self, signal):
         #TODO: Add Stereo Later. Probably that means i'll have to add 2 sources instead of 1
-        self.backing_track = signal[0]
+        self.backing_track = signal[0] if signal.ndim > 1 else signal # when the signal is mono or stereo
         self.room.sources[self.backing_track_index].signal = np.zeros_like(self.backing_track)
         self.backing_track_mute = True
 
@@ -362,18 +405,18 @@ class RoomFactory:
                         (self.intrapoint_distance_min, self.intrapoint_distance_max))
 
         #put the sources and mic
-        room.add_source(placement_points[0] + [choice
-                    (self.source_placement_heights)])
-        room.add_source(placement_points[1] + [choice
-                    (self.source_placement_heights)])
+        room.add_source(placement_points[0] + [choice(self.source_placement_heights)]) #backing track
+        room.add_source(placement_points[1] + [choice(self.source_placement_heights)]) #instrument track
         
         mic_locs = stereo_change(placement_points[2], 
                         choice(self.mic_placement_heights))
         
         room.add_microphone_array(mic_locs)
         
+        #As such, a room will be created with 4 sources, 0 and 2 are bktrack and inst track, and 1 and 3 are 
+        # for the delta functions. The Room wrapper already expects this. 
         #materials = pra.Material(e_absorption)
         #where e_absorption is set from the Sabine Target and the room dimensions.
         #Also, later add mic directivity
         
-        return Room(room, height, backing_track_index=0, instrument_track_index=1, material_name=material_key, kwargs=kwargs)
+        return Room(room, height, material_name=material_key, kwargs=kwargs)

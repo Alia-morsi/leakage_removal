@@ -1,0 +1,9 @@
+eval:
+    model_path: './exp_outputs/x-umx_outputs_exp1'
+    model_name: 'best_model.pth'
+    test_data_path: '/media/alia/2aa686b1-fdb5-4cc9-b12d-c1fcdc0782cc/datasets/leakage_removal/' 
+    output_path: 'dummy' #'EvaluateResults_leakage_musdb18_exp1_drums_testdata' #or sometimes, results_using_pretrained was also used. 
+    instrument: 'drums'
+
+#in case of the private dataset: '/home/alia/Documents/leakage_removal/TCL_Sample/performance_sample_explorer/split_samples/Bass'
+ 
