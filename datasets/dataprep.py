@@ -277,7 +277,6 @@ class MUSDB18LeakageDataGenerator():
                 coordinates = r.get_coordinates()
                 other_params = r.get_other_parameters()
                 dimensions = r.get_dimensions()
-                rt60_estimates = r.get_rt60_estimates()
 
                 joint_dict = {}
                 joint_dict.update(coordinates)
@@ -506,7 +505,7 @@ if __name__ == "__main__":
             materials = materials,
             max_order = max_order)
 
-     gen = MUSDB18LeakageDataGenerator(
+    gen = MUSDB18LeakageDataGenerator(
              clean_train_data=arg_dic['data']['clean_train_dir'],
              clean_test_data=arg_dic['data']['clean_test_dir'],
              output_train_data=arg_dic['data']['out_train_dir'],

@@ -8,6 +8,7 @@ from datetime import datetime
 import torchaudio
 import torch
 import pdb
+from delta_generator import delta
 
 
 #instead, we opted for another approach where a room factory generates a random room with random placement parameters. So, the needed configuration is for the room factory and not the room.
@@ -178,8 +179,8 @@ class Room:
         self.backing_track_index = 0
         self.instrument_track_index = 1
         self.height = height
-        self.backing_track = None
-        self.instrument_track = None
+        self.backing_track = []
+        self.instrument_track = []
 
         self.delta_signal = delta(sample_rate=44100, duration=1.0, amplitude=1.0, epsilon=True)
 
@@ -223,7 +224,7 @@ class Room:
 
         backing_track_bak = self.backing_track
         instrument_track_bak = self.instrument_track
-
+        
         self.add_backing_track(self.delta_signal)
         self.add_instrument_track(self.delta_signal)
 
@@ -237,9 +238,9 @@ class Room:
         instrument_track_rt60 = pra.experimental.rt60.measure_rt60(self.read_mic_output()[0])
 
         #return the backing track and instrument track if they weren't None.
-        if backing_track_bak:
+        if len(backing_track_bak) > 0:
             self.add_backing_track(backing_track_bak)
-        if instrument_track_bak:
+        if len(instrument_track_bak) > 0:
             self.add_instrument_track(instrument_track_bak)
 
         return {'backing_track_rt60': backing_track_rt60, 
