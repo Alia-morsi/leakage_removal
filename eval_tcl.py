@@ -4,7 +4,7 @@ import numpy as np
 import argparse
 import soundfile as sf
 import musdb
-#import museval
+import museval
 import norbert
 from pathlib import Path
 import scipy.signal
@@ -15,7 +15,7 @@ import warnings
 import sys
 import librosa
 
-from eval import load_model, separate
+from eval import load_model, separate, inference_args
 
 #this uses the folder structure in my split samples
 def load_from_tcl_sample(root_dir):
@@ -29,6 +29,10 @@ def load_from_tcl_sample(root_dir):
                 directories.append(item)
     return all_files, directories        
 
+#to test the concat model on tcl, we need the tcl backing tracks too!
+def load_backing_track(filename):
+    return 0
+
 def eval_main(root,
     samplerate=44100,
     niter=1,
@@ -37,13 +41,13 @@ def eval_main(root,
     residual_model=False,
     model_path='.',
     model_name="leakage_xumx",
-    outdir=None, 
     outdir='',
     start=0.0,
     duration=-1.0,
     no_cuda=False,
     instrument='drums',
-    eval_data_path=None
+    eval_data_path=None,
+    variant='no_concat'
 ):
 
 #    outdir = os.path.join(os.path.abspath(outdir), test_output_files)
@@ -66,10 +70,18 @@ def eval_main(root,
         print("No location given for test data, please set one in cfg/eval.yml", file=sys.stderr)
         exit()
 
-    test_dataset, directories  = load_from_tcl_sample(test_path)
+
+    use_cuda = not no_cuda and torch.cuda.is_available()
+    device = torch.device("cuda" if use_cuda else "cpu")
+    model, instruments = load_model(variant, model_name, device)
+
+
+    test_dataset, directories  = load_from_tcl_sample(eval_data_path)
+    results = museval.EvalStore()
+    txtout = os.path.join(outdir, "results.txt")
  
     for track, directory in zip(test_dataset, directories):
-        audio, rate = torchaudio.load(os.path.join(test_path, directory, track))
+        audio, rate = torchaudio.load(os.path.join(eval_data_path, directory, track))
         # reshape to the expected format (the sf read output)
 
         if rate != samplerate:
@@ -106,10 +118,15 @@ def eval_main(root,
         
         for target, estimate in estimates.items():
             sf.write(str(output_path / Path(target).with_suffix(".wav")), estimate, samplerate)
+
         
 if __name__ == "__main__":
+    import yaml
+    from asteroid.utils import prepare_parser_from_dict, parse_args_as_dict
 
-    with open("cfg/eval.yml") as f:
+    parser = argparse.ArgumentParser(description="OSU Inference", add_help=False)
+
+    with open("cfg/eval_tcl.yml") as f:
         eval_conf = yaml.safe_load(f)
     eval_parser = prepare_parser_from_dict(eval_conf, parser=parser)
 
@@ -122,6 +139,7 @@ if __name__ == "__main__":
         outdir=plain_args.output_path,
         model_path=plain_args.model_path,
         eval_data_path=plain_args.test_data_path,
-        instrument=plain_args.instrument
+        instrument=plain_args.instrument,
+        variant=plain_args.model
     )
 
