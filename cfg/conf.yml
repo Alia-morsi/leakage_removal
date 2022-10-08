@@ -21,8 +21,8 @@ data:
   toy_run: True
   backing_track_input: True
   target: bass #drum or bass or vocal
-  root: /media/alia/2aa686b1-fdb5-4cc9-b12d-c1fcdc0782cc/datasets/leakage_removal
-  train_dir: /media/alia/2aa686b1-fdb5-4cc9-b12d-c1fcdc0782cc/datasets/leakage_removal/train
+  root: /media/data/alia/Documents/datasets/leakage_removal2/
+  train_dir: /media/data/alia/Documents/datasets/leakage_removal2/train
   irs_metadata: /home/alia/Documents/projects/leakage_removal/asteroid/egs/musdb18/X-UMX/local/irs.csv
   output: concat_x-umx_outputs_exp1_bass_toy
   irs_1: Aachen Impulse Response Dataset
