@@ -13,16 +13,19 @@ import norbert
 from pathlib import Path
 import scipy.signal
 import resampy
-from models import Leakage_XUMX
+from models import Leakage_XUMX, Leakage_Concat_XUMX
 from asteroid.complex_nn import torch_complex_from_magphase
 import os
 import warnings
 import sys
 
 
-def load_model(model_name, device="cpu"):
+def load_model(variant, model_name, device="cpu"):
     print("Loading model from: {}".format(model_name), file=sys.stderr)
-    model = Leakage_XUMX.from_pretrained(model_name)
+    if variant == 'no_concat':
+        model = Leakage_XUMX.from_pretrained(model_name)
+    elif variant == 'concat':
+        model = Leakage_Concat_XUMX.from_pretrained(model_name)
     model.eval()
     model.to(device)
     return model, model.outputs
@@ -103,19 +106,19 @@ def separate(
         V.append(Vj[:, 0, Ellipsis])  # remove sample dim
         source_names += [target]
 
-    V = np.transpose(np.array(V), (1, 3, 2, 0))
+    V = np.transpose(np.array(V), (1, 3, 2, 0)) #Alia: so, we have nb_frames, nb_bins, nb_channels, nb_sources 
 
     # convert to complex numpy type
     tmp = x_umx_target.encoder(audio_torch)
-    X = torch_complex_from_magphase(tmp[0].permute(1, 2, 3, 0), tmp[1])
+    X = torch_complex_from_magphase(tmp[0].permute(1, 2, 3, 0), tmp[1]) #Alia: strange, why are tmp[0] and tmp[1] shaped differently
     X = X.detach().cpu().numpy()
-    X = X[0].transpose(2, 1, 0)
+    X = X[0].transpose(2, 1, 0) #Alia: making it nb_frames, nb_bins, nb_sources
 
     if residual_model or len(instruments) == 1:
         V = norbert.residual_model(V, X, alpha if softmask else 1)
         source_names += ["residual"] if len(instruments) > 1 else ["accompaniment"]
 
-    Y = norbert.wiener(V, X.astype(np.complex128), niter, use_softmask=softmask)
+    Y = norbert.wiener(V, X.astype(np.complex128), niter, use_softmask=softmask) #V has 2 masks, one for each source, X is the audio spectrogram
 
     estimates = {}
     for j, name in enumerate(source_names):

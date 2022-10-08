@@ -14,3 +14,4 @@ To create a new model:
 
 Then, at this point all you should do is to make sure your conf paths etc are correct and just start running :))
 
+To create a runnable model from a checkpoint, copy the run_checkpoints.py to the folder where the model outputs is stored, update the checkpoint name, and run it. You will get a file called runnable_ckpt.pth

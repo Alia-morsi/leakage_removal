@@ -34,6 +34,7 @@ def eval_main(
     no_cuda=False,
     eval_data_path=None, 
     instrument='drums',
+    variant='no_concat',
 ):
 
     #outdir = os.path.join(os.path.abspath(outdir), test_output_files)
@@ -57,7 +58,7 @@ def eval_main(
 
     use_cuda = not no_cuda and torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
-    model, instruments = load_model(model_name, device)
+    model, instruments = load_model(variant, model_name, device)
     
     #import pdb
     #pdb.set_trace()
@@ -67,6 +68,7 @@ def eval_main(
     fp = open(txtout, "w")
     for track in test_dataset:
         input_file =  os.path.join(os.path.dirname(track.path), "degraded_audio_mix.wav")
+        clean_backing_track = os.path.join(os.path.dirname(track.path), "clean_backing_track.wav")
 
         # handling an input audio path
         info = sf.info(input_file)
@@ -80,7 +82,7 @@ def eval_main(
             stop = None
 
         audio, rate = sf.read(input_file, always_2d=True, start=start, stop=stop)
-
+        
         if audio.shape[1] > 2:
             warnings.warn("Channel count > 2! " "Only the first two channels will be processed!")
             audio = audio[:, :2]
@@ -93,6 +95,21 @@ def eval_main(
             # if we have mono, let's duplicate it
             # as the input of OpenUnmix is always stereo
             audio = np.repeat(audio, 2, axis=1)
+
+        if variant == 'concat':
+            clean_bk_track, rate = sf.read(clean_backing_track, always_2d=True, start=start, stop=stop)
+            shortest = np.min([audio.shape[0], clean_bk_track.shape[0]]) #since we are assuming stereo audio, so the audio length is on the second dim.
+            clean_bk_track = torch.tensor(clean_bk_track)
+            audio = torch.tensor(audio)
+
+            clean_bk_track = torch.narrow(clean_bk_track, 0, 0, shortest)
+            audio = torch.narrow(audio, 0, 0, shortest)
+
+            audio = torch.concat([audio, clean_bk_track], axis=1)
+
+        
+        import pdb
+        pdb.set_trace()
 
         estimates = separate(
             audio,
@@ -114,7 +131,9 @@ def eval_main(
         print(track.name, file=fp)
         for target, estimate in estimates.items():
             sf.write(str(output_path / Path(target).with_suffix(".wav")), estimate, samplerate)
-            
+        
+        import pdb
+        pdb.set_trace()    
         track_scores = museval.eval_mus_track(track, estimates)
         track_scores.df.to_csv(os.path.join(output_path, 'result.csv'))
         results.add_track(track_scores.df)
@@ -186,5 +205,6 @@ if __name__ == "__main__":
         duration=args.duration,
         no_cuda=args.no_cuda,
         eval_data_path = plain_args.test_data_path,
-        instrument=plain_args.instrument
+        instrument=plain_args.instrument,
+        variant=plain_args.model
     )

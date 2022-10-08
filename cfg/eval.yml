@@ -1,9 +1,10 @@
 eval:
-    model_path: './exp_outputs/x-umx_outputs_exp1'
-    model_name: 'best_model.pth'
-    test_data_path: '/media/alia/2aa686b1-fdb5-4cc9-b12d-c1fcdc0782cc/datasets/leakage_removal/' 
-    output_path: 'dummy' #'EvaluateResults_leakage_musdb18_exp1_drums_testdata' #or sometimes, results_using_pretrained was also used. 
-    instrument: 'drums'
+    model_path: '/home/alia/Documents/projects/modified_leakageremoval_environment/leakage_removal/exp_outputs/x-umx_outputs_exp3_bass_no_concat/checkpoint_10_epochs/checkpoints'
+    model_name: 'runnable-epoch=9-step=32919.ckpt'
+    test_data_path: '/media/data/alia/Documents/datasets/leakage_removal2/' 
+    output_path: '/home/alia/Documents/projects/modified_leakageremoval_environment/leakage_removal/results_using_pre-trained/x-umx_outputs_exp3_bass_no_concat-ckpt10_testset/' #'EvaluateResults_leakage_musdb18_exp1_drums_testdata' #or sometimes, results_using_pretrained was also used. 
+    instrument: 'bass'
+    model: no_concat #options are concat or no_concat
 
 #in case of the private dataset: '/home/alia/Documents/leakage_removal/TCL_Sample/performance_sample_explorer/split_samples/Bass'
  

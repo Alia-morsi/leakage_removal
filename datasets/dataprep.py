@@ -126,7 +126,7 @@ class MUSDB18LeakageDataGenerator():
         suffix=".wav",
         samples_per_track=1,
         random_segments=False,
-        split='train',
+        split='test',
         random_track_mix=False,
         sample_rate=44100,
         room_factory=None
@@ -505,7 +505,7 @@ if __name__ == "__main__":
             materials = materials,
             max_order = max_order)
 
-     gen = MUSDB18LeakageDataGenerator(
+    gen = MUSDB18LeakageDataGenerator(
              clean_train_data=arg_dic['data']['clean_train_dir'],
              clean_test_data=arg_dic['data']['clean_test_dir'],
              output_train_data=arg_dic['data']['out_train_dir'],
