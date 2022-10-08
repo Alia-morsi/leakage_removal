@@ -277,7 +277,6 @@ class MUSDB18LeakageDataGenerator():
                 coordinates = r.get_coordinates()
                 other_params = r.get_other_parameters()
                 dimensions = r.get_dimensions()
-                rt60_estimates = r.get_rt60_estimates()
 
                 joint_dict = {}
                 joint_dict.update(coordinates)

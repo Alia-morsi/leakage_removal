@@ -1,6 +1,6 @@
 # Training config
 training:
-  epochs: 10
+  epochs: 30
   batch_size: 14
   loss_combine_sources: no
   loss_use_multidomain: no
@@ -19,12 +19,12 @@ optim:
 #where is the testdir?
 data:
   toy_run: True
-  backing_track_input: True
+  backing_track_input: False
   target: bass #drum or bass or vocal
   root: /media/alia/2aa686b1-fdb5-4cc9-b12d-c1fcdc0782cc/datasets/leakage_removal
   train_dir: /media/alia/2aa686b1-fdb5-4cc9-b12d-c1fcdc0782cc/datasets/leakage_removal/train
   irs_metadata: /home/alia/Documents/projects/leakage_removal/asteroid/egs/musdb18/X-UMX/local/irs.csv
-  output: concat_x-umx_outputs_exp1_bass_toy
+  output: concat_x-umx_outputs_exp1_bass_no_concat
   irs_1: Aachen Impulse Response Dataset
   irs_1_dir: /media/data/alia/Documents/datasets/AIR_1_4
   irs_2: Room Impulse Response and Noise Database
