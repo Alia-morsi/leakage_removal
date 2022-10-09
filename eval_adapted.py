@@ -96,7 +96,7 @@ def eval_main(
             # as the input of OpenUnmix is always stereo
             audio = np.repeat(audio, 2, axis=1)
 
-        if variant == 'concat':
+        if variant == 'concat_1' or 'concat_2':
             clean_bk_track, rate = sf.read(clean_backing_track, always_2d=True, start=start, stop=stop)
             shortest = np.min([audio.shape[0], clean_bk_track.shape[0]]) #since we are assuming stereo audio, so the audio length is on the second dim.
             clean_bk_track = torch.tensor(clean_bk_track)
