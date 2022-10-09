@@ -105,12 +105,8 @@ def eval_main(
             clean_bk_track = torch.narrow(clean_bk_track, 0, 0, shortest)
             audio = torch.narrow(audio, 0, 0, shortest)
 
-            audio = torch.concat([audio, clean_bk_track], axis=1)
-
-        
-        import pdb
-        pdb.set_trace()
-
+            audio = torch.concat([audio, clean_bk_track], axis=1) #even if the prediction only needs a the first 2 audio channels 
+      
         estimates = separate(
             audio,
             model,
@@ -120,6 +116,7 @@ def eval_main(
             softmask=softmask,
             residual_model=residual_model,
             device=device,
+            variant=variant
         )
 
         variant_number = os.path.basename(os.path.split(track.path)[0])
@@ -132,8 +129,6 @@ def eval_main(
         for target, estimate in estimates.items():
             sf.write(str(output_path / Path(target).with_suffix(".wav")), estimate, samplerate)
         
-        import pdb
-        pdb.set_trace()    
         track_scores = museval.eval_mus_track(track, estimates)
         track_scores.df.to_csv(os.path.join(output_path, 'result.csv'))
         results.add_track(track_scores.df)

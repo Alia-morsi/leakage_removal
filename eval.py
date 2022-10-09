@@ -47,6 +47,7 @@ def separate(
     alpha=1.0,
     residual_model=False,
     device="cpu",
+    variant='no_concat',
 ):
     """
     Performing the separation on audio input
@@ -117,6 +118,9 @@ def separate(
     if residual_model or len(instruments) == 1:
         V = norbert.residual_model(V, X, alpha if softmask else 1)
         source_names += ["residual"] if len(instruments) > 1 else ["accompaniment"]
+
+    if variant == 'concat': #for now, just drop the last to channels
+        X = X[..., :2]  #since X is samples, bins, channels, we want to just take the first 2 out of the 4 channels.
 
     Y = norbert.wiener(V, X.astype(np.complex128), niter, use_softmask=softmask) #V has 2 masks, one for each source, X is the audio spectrogram
 
