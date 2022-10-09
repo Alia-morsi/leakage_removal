@@ -139,6 +139,21 @@ toy_valid_tracks = list(toy_valid_tracks)
 #    "Traffic Experiment - Sirens",
 #]
 
+validation_tracks = [
+    'Actions - South Of The Water',
+    'Chris Durban - Celebrate',
+    'Dreamers Of The Ghetto - Heavy Love',
+    'Invisible Familiars - Disturbing Wildlife',
+    'Lushlife - Toynbee Suite',
+    'Music Delta - Grunge',
+    'North To Alaska - All The Same',
+    "Spike Mullings - Mike's Sulking",
+    'St Vitus - Word Gets Around',
+    'The Scarlet Brand - Les Fleurs Du Mal',
+    'Strand Of Oaks - Spacestation',
+    'Leaf - Come Around'
+]
+
 
 def load_datasets(parser, args):
     """Loads the specified dataset from commandline arguments
