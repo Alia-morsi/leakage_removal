@@ -4,17 +4,17 @@ from pathlib import Path
 import random
 import numpy as np
 
-#toy_train_tracks = [
-#    "Johnny Lokke - Promises & Lies",
-#    "Patrick Talbot - A Reason To Leave",
-#    "Triviul - Angelsaint",
-#    "Alexander Ross - Goodbye Bolero",
-#    "Fergessen - Nos Palpitants",
-#    "Leaf - Summerghost"
-#    ]
-
-
 toy_train_tracks = [
+    "Johnny Lokke - Promises & Lies",
+    "Patrick Talbot - A Reason To Leave",
+    "Triviul - Angelsaint",
+    "Alexander Ross - Goodbye Bolero",
+    "Fergessen - Nos Palpitants",
+    "Leaf - Summerghost"
+    ]
+
+
+'''toy_train_tracks = [
     'A Classic Education - NightOwl',
     "Actions - Devil's Words",
     #'Actions - One Minute Smile',
@@ -114,9 +114,9 @@ toy_train_tracks = [
    # 'Young Griffo - Blood To Bone',
    # 'Young Griffo - Facade',
     'Young Griffo - Pennies',
-        ]
+        ]'''
 
-#toy_valid_tracks = toy_train_tracks[0:2]
+toy_valid_tracks = toy_train_tracks[0:2]
 
 #The validation tracks will be 10 random tracks from the toy train set. 
 #toy_valid_tracks = np.array(toy_train_tracks)[random.sample(range(0, len(toy_train_tracks)), 10)] 
@@ -139,7 +139,7 @@ toy_train_tracks = [
 #    "Traffic Experiment - Sirens",
 #]
 
-toy_validation_tracks = [
+'''toy_validation_tracks = [
     'Actions - South Of The Water',
     'Chris Durban - Celebrate',
     'Dreamers Of The Ghetto - Heavy Love',
@@ -152,7 +152,7 @@ toy_validation_tracks = [
     'The Scarlet Brand - Les Fleurs Du Mal',
     'Strand Of Oaks - Spacestation',
     'Leaf - Come Around'
-]
+]'''
 
 
 def load_datasets(parser, args):
