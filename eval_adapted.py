@@ -120,7 +120,6 @@ def eval_main(
         )
 
         variant_number = os.path.basename(os.path.split(track.path)[0])
-
         output_path = Path(os.path.join(outdir, instrument, track.name, variant_number))
         output_path.mkdir(exist_ok=True, parents=True)
 
