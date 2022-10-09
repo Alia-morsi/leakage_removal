@@ -119,8 +119,8 @@ toy_train_tracks = [
 #toy_valid_tracks = toy_train_tracks[0:2]
 
 #The validation tracks will be 10 random tracks from the toy train set. 
-toy_valid_tracks = np.array(toy_train_tracks)[random.sample(range(0, len(toy_train_tracks)), 10)] 
-toy_valid_tracks = list(toy_valid_tracks)
+#toy_valid_tracks = np.array(toy_train_tracks)[random.sample(range(0, len(toy_train_tracks)), 10)] 
+#toy_valid_tracks = list(toy_valid_tracks)
 
 #validation_tracks = [
 #    "Actions - One Minute Smile",
@@ -139,7 +139,7 @@ toy_valid_tracks = list(toy_valid_tracks)
 #    "Traffic Experiment - Sirens",
 #]
 
-validation_tracks = [
+toy_validation_tracks = [
     'Actions - South Of The Water',
     'Chris Durban - Celebrate',
     'Dreamers Of The Ghetto - Heavy Love',
