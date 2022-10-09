@@ -29,8 +29,8 @@ data:
     leakage_removal: True
     clean_train_dir: /home/alia/Documents/projects/leakage_removal/asteroid/egs/musdb18/X-UMX/data/clean/train
     clean_test_dir: /home/alia/Documents/projects/leakage_removal/asteroid/egs/musdb18/X-UMX/data/clean/test
-    out_train_dir: /media/data/alia/Documents/datasets/leakage_removal2/train
-    out_test_dir: /media/data/alia/Documents/datasets/leakage_removal2/test
+    out_train_dir: /media/alia/2aa686b1-fdb5-4cc9-b12d-c1fcdc0782cc/datasets/leakage_removal_after_rt60/train
+    out_test_dir: /media/alia/2aa686b1-fdb5-4cc9-b12d-c1fcdc0782cc/datasets/leakage_removal_after_rt60/test
     sources:
     - bass
     - drums

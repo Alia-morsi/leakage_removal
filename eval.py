@@ -13,7 +13,7 @@ import norbert
 from pathlib import Path
 import scipy.signal
 import resampy
-from models import Leakage_XUMX, Leakage_Concat_XUMX
+from models import Leakage_XUMX, Leakage_Concat_XUMX, Leakage_Concat2_XUMX
 from asteroid.complex_nn import torch_complex_from_magphase
 import os
 import warnings
@@ -24,8 +24,10 @@ def load_model(variant, model_name, device="cpu"):
     print("Loading model from: {}".format(model_name), file=sys.stderr)
     if variant == 'no_concat':
         model = Leakage_XUMX.from_pretrained(model_name)
-    elif variant == 'concat':
+    elif variant == 'concat_1':
         model = Leakage_Concat_XUMX.from_pretrained(model_name)
+    elif variant == 'concat_2':
+        model = Leakage_Concat2_XUMX.from_pretrained(model_name)
     model.eval()
     model.to(device)
     return model, model.outputs
@@ -47,6 +49,7 @@ def separate(
     alpha=1.0,
     residual_model=False,
     device="cpu",
+    variant='no_concat',
 ):
     """
     Performing the separation on audio input
@@ -117,6 +120,9 @@ def separate(
     if residual_model or len(instruments) == 1:
         V = norbert.residual_model(V, X, alpha if softmask else 1)
         source_names += ["residual"] if len(instruments) > 1 else ["accompaniment"]
+
+    if variant == 'concat_1': #for now, just drop the last to channels. concat_2 should not need this since the encoder should output the proper shape
+        X = X[..., :2]  #since X is samples, bins, channels, we want to just take the first 2 out of the 4 channels.
 
     Y = norbert.wiener(V, X.astype(np.complex128), niter, use_softmask=softmask) #V has 2 masks, one for each source, X is the audio spectrogram
 
