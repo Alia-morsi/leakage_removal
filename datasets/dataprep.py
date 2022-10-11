@@ -513,7 +513,8 @@ if __name__ == "__main__":
              ir_paths=ir_paths, 
              sources=arg_dic['data']['sources'],
              targets=arg_dic['data']['targets'],
-             room_factory = rf
+             room_factory = rf,
+             split=arg_dic['data']['split']
              )
 
     gen.generate_and_save_all()

@@ -27,6 +27,7 @@ room_config:
 data:
     sample_rate: 44100
     leakage_removal: True
+    split: test
     clean_train_dir: /home/alia/Documents/projects/leakage_removal/asteroid/egs/musdb18/X-UMX/data/clean/train
     clean_test_dir: /home/alia/Documents/projects/leakage_removal/asteroid/egs/musdb18/X-UMX/data/clean/test
     out_train_dir: /media/alia/2aa686b1-fdb5-4cc9-b12d-c1fcdc0782cc/datasets/leakage_removal_after_rt60/train
