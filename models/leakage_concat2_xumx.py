@@ -7,7 +7,7 @@ from asteroid.models import BaseModel
 
 #import pdb
 
-class Leakage_XUMX(BaseModel):
+class Leakage_Concat2_XUMX(BaseModel):
     r"""CrossNet-Open-Unmix (X-UMX) for Music Source Separation introduced in [1].
         There are two notable contributions with no effect on inference:
             a) Multi Domain Losses
@@ -99,6 +99,9 @@ class Leakage_XUMX(BaseModel):
         spec = _Spectrogram(spec_power=spec_power, mono=(nb_channels == 1))
         self.encoder = nn.Sequential(stft, spec)  # Return: Spec, Angle
 
+        #Adapted for concat_2 option
+        self.adapter = _AdapterEnc() #default parameters are fine for now
+
         # Define DNN Core
         lstm_hidden_size = hidden_size // 2 if bidirectional else hidden_size
         src_enc = {}
@@ -110,7 +113,7 @@ class Leakage_XUMX(BaseModel):
             src_enc[src] = _InstrumentBackboneEnc(
                 nb_bins=self.max_bin,
                 hidden_size=hidden_size,
-                nb_channels=nb_channels,
+                nb_channels=4, #change this shit hardcoding
             )
 
             # Define Recurrent Lyaers.
@@ -127,7 +130,7 @@ class Leakage_XUMX(BaseModel):
             src_dec[src] = _InstrumentBackboneDec(
                 nb_output_bins=self.nb_output_bins,
                 hidden_size=hidden_size,
-                nb_channels=nb_channels,
+                nb_channels=nb_channels, #I wonder if this will cause a problem.. should the nb_channels be 2 here, or kept at 4 here and 2 at the output. If the LSTM doesn't really care about channels, then maybe it won't matter though we might need to somehow divide the LSTM output by 2.
             )
 
             mean_scale["input_mean_{}".format(src)] = Parameter(input_mean.clone())
@@ -138,6 +141,7 @@ class Leakage_XUMX(BaseModel):
             mean_scale["output_scale_{}".format(src)] = Parameter(
                 torch.ones(self.nb_output_bins).float()
             )
+
         self.layer_enc = nn.ModuleDict(src_enc)
         self.layer_lstm = nn.ModuleDict(src_lstm)
         self.layer_dec = nn.ModuleDict(src_dec)
@@ -148,6 +152,7 @@ class Leakage_XUMX(BaseModel):
 
     def forward(self, wav):
         """Model forward
+
 
         Args:
             wav (torch.Tensor): waveform tensor. 1D, 2D or 3D tensor, time last.
@@ -161,14 +166,8 @@ class Leakage_XUMX(BaseModel):
         ## Maybe the change notes I have here are even not necessary, and we should just make it a 4 channel wav?
         ## Or just make a tweak to the encoder to fix the dimensionality of the mixture.
         ## I think I prefer to use the branch approach so as not to cause confusions on what parameters mean (channels etc)
-        
-        import pdb
-        pdb.set_trace()
-
         mixture, ang = self.encoder(wav)
-      
-        import pdb
-        pdb.set_trace() 
+       
         #pdb.set_trace() #This is to check that the input is correct
         ## CHANGE_NOTES
         ## 1 and 2: Make another mixture from the backing track (or should we just concatenate the wav files?)
@@ -180,10 +179,15 @@ class Leakage_XUMX(BaseModel):
         ## 2. Mask for backing track
         ## 3. In the future: Mask for Noise.
 
-        est_masks = self.forward_masker(mixture.clone())
+        import pdb
+        pdb.set_trace()
+
+        adapted_mixture = self.adapter(mixture.clone())
+        est_masks = self.forward_masker(adapted_mixture.clone())
 
         # Apply masks to mixture
         # 1 and 2: Run this once for each mask
+
         masked_mixture = self.apply_masks(mixture, est_masks)
 
         # Inverse Transform
@@ -215,21 +219,28 @@ class Leakage_XUMX(BaseModel):
 
         # 1st Bridging operation and apply 3-layers of stacked LSTM
         cross_1 = sum(inputs) / len(self.outputs)
+
         cross_2 = 0.0
         for i, src in enumerate(self.outputs):
             tmp_lstm_out = self.layer_lstm[src](cross_1)
             # lstm skip connection
             cross_2 += torch.cat([inputs[i], tmp_lstm_out[0]], -1)
+            # this is to answer why they do tmp_lstm_out[0]? what's in the other entries.
 
         # 2nd Bridging operation
         cross_2 /= len(self.outputs)
         mask_list = []
+
+        #modify the channel portion of shapes to be half what it was 
+
         for src in self.outputs:
             x_tmp = self.layer_dec[src](cross_2, shapes)
             x_tmp *= self.mean_scale["output_scale_{}".format(src)]
             x_tmp += self.mean_scale["output_mean_{}".format(src)]
             mask_list.append(F.relu(x_tmp))
         est_masks = torch.stack(mask_list, dim=0)
+
+        #this is to check the dimensions of the masks, to see if it's 2 channels or 4 channels
 
         return est_masks
 
@@ -295,11 +306,43 @@ class _InstrumentBackboneEnc(nn.Module):
 
     def forward(self, x, shapes):
         nb_frames, nb_samples, nb_channels, _ = shapes
+        #Dimensionality of input to self.enc should be 2. since nb_channels and self.max_bin are merged on one axis
         x = self.enc(x.reshape(-1, nb_channels * self.max_bin))
         x = x.reshape(nb_frames, nb_samples, self.hidden_size)
+        #then it is returned to frames x samples x channels.
 
         # squash range to [-1, 1]
         x = torch.tanh(x)
+        return x
+
+
+class _AdapterEnc(nn.Module):
+    """Adapter to convert spectrogram of our 4 channel input (2xaudiomix + 2xbackingtrack) to a 2 channel spectrogram.
+        Inputs shapes: mag: frames * 1 * 4 * 2049, ang: 1 * 4 * 2049 * frames
+        output shapes: mag only: frames * 1 * 2 * 2049
+     Args:
+    """
+
+    def __init__(
+        self,
+        nb_output_bins=2049,
+        nb_in_channels=4,
+        nb_out_channels=2,
+    ):
+        super().__init__()
+        self.nb_output_bins = nb_output_bins
+        self.nb_in_channels = nb_in_channels
+        self.nb_out_channels = nb_out_channels
+        self.adapter = nn.Sequential(
+            Linear(in_features= nb_output_bins * nb_in_channels, out_features= nb_output_bins * nb_out_channels, bias=False),
+            BatchNorm1d(self.nb_output_bins * nb_out_channels),
+        )
+
+    def forward(self, x, shapes):
+        nb_frames, nb_samples, nb_channels, _ = shapes
+        x = self.adapter(x.reshape(-1, nb_output_bins * nb_in_channels))
+        x = x.reshape(nb_frames, nb_samples, self.nb_out_channels, self.nb_output_bins)
+
         return x
 
 
@@ -323,7 +366,7 @@ class _InstrumentBackboneDec(nn.Module):
         super().__init__()
         self.nb_output_bins = nb_output_bins
         self.dec = nn.Sequential(
-            Linear(in_features=hidden_size * 2, out_features=hidden_size, bias=False),
+            Linear(in_features=hidden_size * nb_channels, out_features=hidden_size, bias=False),
             BatchNorm1d(hidden_size),
             nn.ReLU(),
             Linear(
@@ -334,6 +377,8 @@ class _InstrumentBackboneDec(nn.Module):
 
     def forward(self, x, shapes):
         nb_frames, nb_samples, nb_channels, _ = shapes
+        #divide nb_channels by 2, although this technically should be done in the forward_masker function (the caller)
+        nb_channels = 2
         x = self.dec(x.reshape(-1, x.shape[-1]))
         x = x.reshape(nb_frames, nb_samples, nb_channels, self.nb_output_bins)
         return x
