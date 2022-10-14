@@ -25,7 +25,7 @@ data:
   root: /media/alia/2aa686b1-fdb5-4cc9-b12d-c1fcdc0782cc/datasets/leakage_removal/
   train_dir: /media/alia/2aa686b1-fdb5-4cc9-b12d-c1fcdc0782cc/datasets/leakage_removal/train
   irs_metadata: /home/alia/Documents/projects/leakage_removal/asteroid/egs/musdb18/X-UMX/local/irs.csv
-  output: dummy_concat_x-umx_outputs_exp1_bass_no_concat
+  output: aykalam_concat_x-umx_outputs_exp1_bass_no_concat
   irs_1: Aachen Impulse Response Dataset
   irs_1_dir: /media/data/alia/Documents/datasets/AIR_1_4
   irs_2: Room Impulse Response and Noise Database
@@ -33,7 +33,8 @@ data:
   sample_rate: 44100
   num_workers: 4
   seed: 42
-  seq_dur: 6.0
+  seq_dur: 12.0
+  random_segments: False
   samples_per_track: 64
   source_augmentations:
     - gain
