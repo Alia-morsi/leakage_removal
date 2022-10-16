@@ -145,19 +145,23 @@ class Leakage_MUSDB18Dataset(torch.utils.data.Dataset):
         model_inputs = {}
         model_outputs = {}
 
+        import pdb
+        pdb.set_trace()
+
         # get track_id
         track_id = index // self.samples_per_track
-        if self.random_segments:
-            start = random.uniform(0, self.tracks[track_id]["min_duration"] - self.segment)
+
+        if self.segment:
+            start = random.uniform(0, self.tracks[track_id]["duration"] - self.segment)
         else:
             start = 0
 
         # load sources
         for model_input in self.inputs:
             # optionally select a random track for each source
-            track_id = random.choice(range(len(self.tracks)))
+            #track_id = random.choice(range(len(self.tracks))) WHY DID I DO THIS.............
             if self.random_segments:
-                start = random.uniform(0, self.tracks[track_id]["min_duration"] - self.segment)
+                start = random.uniform(0, self.tracks[track_id]["duration"] - self.segment)
 
             # loads the full track duration
             start_sample = int(start * self.sample_rate)
@@ -252,13 +256,15 @@ class Leakage_MUSDB18Dataset(torch.utils.data.Dataset):
                 if not all(i.samplerate == self.sample_rate for i in infos):
                     print("Exclude track due to a different sample rate", track_path)
                     continue
-                
-                if self.segment is not None:
-                    min_duration = min(i.duration for i in infos)
-                    if min_duration > self.segment:
-                        yield({"path": track_path, "min_duration": min_duration})
-                else:
-                    yield({"path": track_path, "min_duration": None})
+               
+                duration = min(i.duration for i in infos)
+                #if self.segment is not None:
+                #    min_duration = 10.0 #shit hardcoding for now
+                #    if min_duration > self.segment:
+                #        yield({"path": track_path, "duration": min_duration})
+                #else:
+                #    yield({"path": track_path, "duration": duration})
+                yield({"path": track_path, "duration": duration})
                  
 
     def get_infos(self):

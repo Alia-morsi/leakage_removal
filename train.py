@@ -51,10 +51,10 @@ def get_statistics(args, dataset):
     )
 
     dataset_scaler = copy.deepcopy(dataset)
-    dataset_scaler.samples_per_track = 1
-    dataset_scaler.random_segments = False
+    dataset_scaler.samples_per_track = args.samples_per_track
+    dataset_scaler.random_segments = args.random_segments
     dataset_scaler.random_track_mix = False
-    dataset_scaler.segment = False
+    dataset_scaler.segment = args.seq_dur
     pbar = tqdm.tqdm(range(len(dataset_scaler)))
     for ind in pbar:
         x, _ = dataset_scaler[ind]
@@ -388,6 +388,9 @@ def main(conf, args):
     exp_dir.mkdir(parents=True, exist_ok=True)
 
     # Load Datasets
+    import pdb
+    pdb.set_trace()
+
     train_dataset, valid_dataset = dataloader.load_datasets(parser, args)
     dataloader_kwargs = (
         {"num_workers": args.num_workers, "pin_memory": True} if torch.cuda.is_available() else {}
