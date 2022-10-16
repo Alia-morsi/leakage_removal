@@ -113,6 +113,14 @@ def separate(
 
     # convert to complex numpy type
     tmp = x_umx_target.encoder(audio_torch)
+
+    import pdb #try shapes to verify, both in concat case or no concat case
+    pdb.set_trace()
+
+    if variant == 'concat_2':
+        #tmp = x_umx_target.adapter(tmp)
+        print(variant)
+
     X = torch_complex_from_magphase(tmp[0].permute(1, 2, 3, 0), tmp[1]) #Alia: strange, why are tmp[0] and tmp[1] shaped differently
     X = X.detach().cpu().numpy()
     X = X[0].transpose(2, 1, 0) #Alia: making it nb_frames, nb_bins, nb_sources
