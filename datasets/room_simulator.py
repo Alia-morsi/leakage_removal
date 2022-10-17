@@ -174,8 +174,9 @@ def choose_3_points(x_center_range, y_center_range, radius, intrapoint_distance)
     return [point_1, point_2, point_3]
 
 class Room:
-    def __init__(self, room, height, material_name, kwargs):
+    def __init__(self, room, room_type, height, material_name, kwargs):
         self.room = room
+        self.room_type = room_type
         self.backing_track_index = 0
         self.instrument_track_index = 1
         self.height = height
@@ -304,7 +305,7 @@ class Room:
         zipped_lists = zip(corners[0], corners[1])
         sorted_pairs = sorted(zipped_lists)
         return {
-            'room_type': True, #probably wont matter, if we'll pass dim as corners
+            'room_type': self.room_type, #probably wont matter, if we'll pass dim as corners
             'corners': sorted_pairs,
             'height': self.height
         }
@@ -420,4 +421,4 @@ class RoomFactory:
         #where e_absorption is set from the Sabine Target and the room dimensions.
         #Also, later add mic directivity
         
-        return Room(room, height, material_name=material_key, kwargs=kwargs)
+        return Room(room, room_type, height, material_name=material_key, kwargs=kwargs)
