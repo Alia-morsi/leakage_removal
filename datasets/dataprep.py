@@ -96,7 +96,11 @@ def normalize_and_convert(channels):
 
     return torch.vstack([channel1, channel2])
 
+def convert(channels):
+    channel1 = torch.FloatTensor(channels[0])
+    channel2 = torch.FloatTensor(channels[1])
 
+    return torch.vstack([channel1, channel2])
 
 #create a dictionary of corners which we can use for defining the rooms
 #expects input in the form of the 
@@ -264,15 +268,15 @@ class MUSDB18LeakageDataGenerator():
                 
                 #read degraded backing track as if there wasn't an instrument playing
                 r.toggle_mute_backing_track()
-                degraded_backing_track = r.read_mic_output()
+                degraded_backing_track = convert(r.read_mic_output())
 
                 #read degraded full mix
                 r.toggle_mute_instrument_track()
-                degraded_audio_mix = r.read_mic_output()
+                degraded_audio_mix = convert(r.read_mic_output())
 
                 #read degraded instrument mix as if there were no backing track
                 r.toggle_mute_backing_track()
-                degraded_instrument_track = r.read_mic_output()
+                degraded_instrument_track = convert(r.read_mic_output())
                 
                 coordinates = r.get_coordinates()
                 other_params = r.get_other_parameters()
@@ -477,7 +481,7 @@ if __name__ == "__main__":
     room_fixed_1 = [[[0, 0], [0, 4], [6, 4], [6, 2], [3.5, 2], [3.5, 0]]]
     room_mult_factor = (1, 10)
     room_fixed_maxes = (3.5, 4)
-    room_heights = [3, 3.5, 4]
+    room_heights = [3, 3.5, 4, 4.5, 5, 5.5, 6]
     mic_placement_heights = [1, 1.5, 2]
     source_placement_heights = [0.5, 1, 1.5, 2]
     snr_options = []
