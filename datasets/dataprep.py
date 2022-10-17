@@ -264,15 +264,15 @@ class MUSDB18LeakageDataGenerator():
                 
                 #read degraded backing track as if there wasn't an instrument playing
                 r.toggle_mute_backing_track()
-                degraded_backing_track = normalize_and_convert(r.read_mic_output())
+                degraded_backing_track = r.read_mic_output()
 
                 #read degraded full mix
                 r.toggle_mute_instrument_track()
-                degraded_audio_mix = normalize_and_convert(r.read_mic_output())
+                degraded_audio_mix = r.read_mic_output()
 
                 #read degraded instrument mix as if there were no backing track
                 r.toggle_mute_backing_track()
-                degraded_instrument_track = normalize_and_convert(r.read_mic_output())
+                degraded_instrument_track = r.read_mic_output()
                 
                 coordinates = r.get_coordinates()
                 other_params = r.get_other_parameters()
