@@ -133,9 +133,9 @@ def point_in_circle(x_center, y_center, radius):
 def stereo_change(x_y, h):
     #for now we'll just pretend they are 2 mics placed vertically
     R = deepcopy(x_y)
-    R[1] = R[1] - 0.2
+    R[1] = R[1] - 0.3
     L = deepcopy(x_y)
-    L[1] - L[1] + 0.2
+    L[1] - L[1] + 0.3
 
     mic_locs = np.c_[
             R + [h],
