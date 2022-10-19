@@ -12,9 +12,37 @@ from asteroid.complex_nn import torch_complex_from_magphase
 import os
 import warnings
 import sys
-from openunmix import predict
+import pandas as pd
+import torch.nn.functional as F
+
+
+#separator = torch.hub.load('sigsep/open-unmix-pytorch', 'umxl')
 
 from eval import inference_args
+
+#input: 1x2xsamples, in a torch tensor
+#output:  (with zero padding if needed), and number of padded samples
+def frame_cutter(audio_tensor, frame_len_s, sample_rate):
+    frame_size = frame_len_s * sample_rate
+    
+    #padding:
+    remainder = frame_size - (audio_tensor.shape[2] % frame_size)
+    if remainder !=0:
+        audio_tensor = F.pad(input=audio_tensor, pad=(0, remainder, 0, 0, 0, 0), value=0)
+        
+    split_tensor = torch.split(audio_tensor, frame_size, dim=2)
+    split_tensor = torch.cat(split_tensor, dim=0)
+    
+    return split_tensor, remainder
+
+#input nx4x2xsamples, start padding
+#output 1x2xsamples, without the previously applied padding
+def frame_gluer(prediction, remainder):
+    #maybe no need to remove padding since it is appleid at the end, I can just cut the audio like i did in the data loaders after merging
+    torch_seq = torch.split(prediction, 1, dim=0)
+    merged = torch.cat(torch_seq, dim=3)
+
+    return merged
 
 
 def eval_main(
@@ -50,11 +78,12 @@ def eval_main(
     use_cuda = not no_cuda and torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
+    #separator = torch.hub.load('sigsep/open-unmix-pytorch', 'umxhq', device=device)
+    separator = torch.hub.load('sigsep/open-unmix-pytorch', 'umxhq')    
 
-    import pdb
-    pdb.set_trace()    
     test_dataset = musdb.DB(root=root, subsets="test", is_wav=True, instrument=instrument, data_path=eval_data_path)
     results = museval.EvalStore()
+    results_df = pd.DataFrame(columns=['target', 'metric', 'mean_values', 'median_values', 'variant', 'track_name'])
     txtout = os.path.join(outdir, "results.txt")
     fp = open(txtout, "w")
     for track in test_dataset:
@@ -86,14 +115,40 @@ def eval_main(
             # if we have mono, let's duplicate it
             # as the input of OpenUnmix is always stereo
             audio = np.repeat(audio, 2, axis=1)
+     
+        #audio_torch = torch.tensor(audio.T[None, ...]).float().to(device)
+        audio_torch = torch.tensor(audio.T[None, ...]).float()
 
-        #should be an array of 
-        estimates = predict.separate(
-            torch.as_tensor(audio).float(),
-            rate=rate,
-            device=device
-        )
+        import pdb
+        pdb.set_trace()
 
+        split_audio, padding = frame_cutter(audio_torch, 10, 44100)
+
+        prediction = separator(split_audio)
+
+        prediction = frame_gluer(prediction, 0)
+        #squeeze the prediction to the length of the input audio to remove the initial padding
+
+        prediction = prediction.detach()
+
+        estimates = {}
+        estimates['vocal'] = prediction[0][0] 
+        estimates['drums'] = prediction[0][1]
+        estimates['bass'] = prediction[0][2]
+        estimates['other'] = prediction[0][3]
+
+        #adapt the output of openunmix: it outputs 22050, our gt loaded from the musdb package is
+        #in 44100. so, we resample
+        if instrument == 'bass':
+            estimates['degraded_instrument_track'] = estimates['bass']
+            estimates['degraded_backing_track'] = estimates['vocals'] + estimates['other'] + estimates['drums']
+
+        elif instrument == 'drums':
+            estimates['degraded_instrument_track'] = estimates['drums']
+            estimates['degraded_backing_track'] = estimates['vocals'] + estimates['other'] + estimates['bass']
+
+        #for key, val in estimates.items():
+        #    estimates[key] = resampy.resample(estimates[val], 22050, 44100, axis=0)
 
         variant_number = os.path.basename(os.path.split(track.path)[0])
         output_path = Path(os.path.join(outdir, instrument, track.name, variant_number))
@@ -103,23 +158,51 @@ def eval_main(
         print(track.name, file=fp)
         for target, estimate in estimates.items():
             sf.write(str(output_path / Path(target).with_suffix(".wav")), estimate, samplerate)
-      
-        import pdb 
-        pdb.set_trace()
- 
+    
+        #just for debugging, overwrite the tracks to be a subset from 10 - 40 seconds
+        
+        
         track_scores = museval.eval_mus_track(track, estimates)
-        track_scores.df.to_csv(os.path.join(output_path, 'result.csv'))
+        track_scores.df.to_csv(os.path.join(output_path, 'frame_result.csv'))
+        
+        summary_target = ['degraded_backing_track', 'degraded_instrument_track']
+        summary_metrics = ['SDR', 'SIR', 'SAR']
+        summary_target_col = []
+        summary_metric_col = []
+        summary_metric_median = []
+        summary_metric_mean = []
+        track_variant = []
+        track_name = []
+        for t in summary_target:
+            for m in summary_metrics:
+                summary_target_col.append(t)
+                summary_metric_col.append(m) 
+                rel_cols = track_scores.df[(track_scores.df['metric'] == m) & (track_scores.df['target'] == t)]
+                summary_metric_median.append(track_scores.frames_agg(rel_cols['score']))
+                summary_metric_mean.append(np.nanmean(rel_cols['score']))
+                track_variant.append(os.path.basename(os.path.dirname(track.path)))
+                track_name.append(track_scores.track_name)
+                
+        summary_df = pd.DataFrame({ 'target': summary_target_col,
+                                    'metric': summary_metric_col, 
+                                    'mean_values': summary_metric_mean,
+                                    'median_values': summary_metric_median,
+                                    'variant': track_variant,
+                                    'track_name': track_name
+                        })
+       
+        summary_df.to_csv(os.path.join(output_path, 'results_summary.csv'))
         results.add_track(track_scores.df)
+        results_df = results_df.append(summary_df)
         print(track_scores, file=sys.stderr)
-        print(track_scores, file=fp)
+        results_df.to_csv(os.path.join(outdir, instrument, 'all_result_summaries.csv'))
+
+    #aggregate results of all runs
     print(results, file=sys.stderr)
-    print(results, file=fp)
-    results.save(os.path.join(outdir, "results.pandas"))
+    results_df.to_csv(os.path.join(outdir, instrument, 'all_result_summaries.csv'))
     results.frames_agg = "mean"
     print(results, file=sys.stderr)
-    print(results, file=fp)
     fp.close()
-
 
 if __name__ == "__main__":
     # Training settings
@@ -166,7 +249,7 @@ if __name__ == "__main__":
 
     eval_main(
         root=musdb.__path__[0],
-        samplerate=args.samplerate,
+        samplerate=plain_args.samplerate,
         alpha=args.alpha,
         softmask=args.softmask,
         niter=args.niter,
