@@ -2,10 +2,11 @@ eval:
     model_path: '/home/alia/Documents/leakage_removal/concat_x-umx_outputs_exp1_bass_no_concat'
     model_name: 'best_model.pth'
     #test_data_path: '/media/data/alia/Documents/datasets/leakage_removal2/'
-    test_data_path: '/media/data/alia/Documents/datasets/leakage_removal_after_rt60' 
-    output_path: '/home/alia/Documents/modified_leakageremoval_environment/leakage_removal/debugging_spleeter_baseline/' #'EvaluateResults_leakage_musdb18_exp1_drums_testdata' #or sometimes, results_using_pretrained was also used. 
-    instrument: 'drums'
+    test_data_path: '/media/alia/2aa686b1-fdb5-4cc9-b12d-c1fcdc0782cc/datasets/leakage_removal_3/' 
+    output_path: '/home/alia/Documents/modified_leakageremoval_environment/leakage_removal/openunmix_baseline/' #'EvaluateResults_leakage_musdb18_exp1_drums_testdata' #or sometimes, results_using_pretrained was also used. 
+    instrument: 'bass'
     model: no_concat #options are concat or no_concat
+    samplerate: 44100
 
 #in case of the private dataset: '/home/alia/Documents/leakage_removal/TCL_Sample/performance_sample_explorer/split_samples/Bass'
  

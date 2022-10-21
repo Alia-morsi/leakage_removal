@@ -162,14 +162,8 @@ class Leakage_XUMX(BaseModel):
         ## Or just make a tweak to the encoder to fix the dimensionality of the mixture.
         ## I think I prefer to use the branch approach so as not to cause confusions on what parameters mean (channels etc)
         
-        import pdb
-        pdb.set_trace()
-
         mixture, ang = self.encoder(wav)
       
-        import pdb
-        pdb.set_trace() 
-        #pdb.set_trace() #This is to check that the input is correct
         ## CHANGE_NOTES
         ## 1 and 2: Make another mixture from the backing track (or should we just concatenate the wav files?)
 

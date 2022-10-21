@@ -15,3 +15,11 @@ To create a new model:
 Then, at this point all you should do is to make sure your conf paths etc are correct and just start running :))
 
 To create a runnable model from a checkpoint, copy the run_checkpoints.py to the folder where the model outputs is stored, update the checkpoint name, and run it. You will get a file called runnable_ckpt.pth
+
+To run the demucs environment for eval:
+1. create a copy of the source_sep conda env
+2. Activate it, and update the env with the environment-cuda or cpu depending on your machine. Be sure to remove the name: key from the env fileso that it actually updates the environment you are in rather than create a new one.
+3. clone the demucs repo
+4. checkout branch v2
+5. pip install . -e
+Then, the eval scripts for demucs or tasnet can be run normally.

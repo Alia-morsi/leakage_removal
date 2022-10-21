@@ -79,7 +79,7 @@ def eval_main(
     device = torch.device("cuda" if use_cuda else "cpu")
 
     #separator = torch.hub.load('sigsep/open-unmix-pytorch', 'umxhq', device=device)
-    separator = torch.hub.load('sigsep/open-unmix-pytorch', 'umxhq')    
+    separator = torch.hub.load('sigsep/open-unmix-pytorch', 'umxhq', device=device)    
 
     test_dataset = musdb.DB(root=root, subsets="test", is_wav=True, instrument=instrument, data_path=eval_data_path)
     results = museval.EvalStore()
@@ -119,11 +119,12 @@ def eval_main(
         #audio_torch = torch.tensor(audio.T[None, ...]).float().to(device)
         audio_torch = torch.tensor(audio.T[None, ...]).float()
 
+        split_audio, padding = frame_cutter(audio_torch, 6, 44100)
+
         import pdb
         pdb.set_trace()
 
-        split_audio, padding = frame_cutter(audio_torch, 10, 44100)
-
+        #separate the predictions:
         prediction = separator(split_audio)
 
         prediction = frame_gluer(prediction, 0)

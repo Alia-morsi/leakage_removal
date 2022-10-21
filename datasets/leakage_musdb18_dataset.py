@@ -145,9 +145,7 @@ class Leakage_MUSDB18Dataset(torch.utils.data.Dataset):
         model_inputs = {}
         model_outputs = {}
 
-        import pdb
-        pdb.set_trace()
-
+        #if index is gotten by this class' len, then we good. 
         # get track_id
         track_id = index // self.samples_per_track
 
@@ -219,8 +217,6 @@ class Leakage_MUSDB18Dataset(torch.utils.data.Dataset):
         # degraded instrument track, degraded backing track
         stacked_outputs = torch.stack(list(model_outputs.values()), dim=0)
     
-        #import pdb
-        #pdb.set_trace()
 
         if self.backing_track_input:
             return concat_inputs, stacked_outputs

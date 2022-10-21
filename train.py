@@ -285,8 +285,6 @@ class MultiDomainLoss(_Loss):
         targets = targets.view(n_batch, n_src * n_channel, time_length)
         Y = self.transform(targets)[0]
 
-        #import pdb
-        #pdb.set_trace()
 
         if self._multi:
             n_src = spec_hat.shape[0]
@@ -388,8 +386,6 @@ def main(conf, args):
     exp_dir.mkdir(parents=True, exist_ok=True)
 
     # Load Datasets
-    import pdb
-    pdb.set_trace()
 
     train_dataset, valid_dataset = dataloader.load_datasets(parser, args)
     dataloader_kwargs = (
